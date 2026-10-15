@@ -8,6 +8,13 @@ import { CartProvider, useCart } from './context/CartContext'
 import { CATEGORIES, PRODUCTS, cartKey, findProduct } from './data/products'
 import { STORE_ADDRESS } from './lib/shipping'
 
+// Beneficios que se muestran arriba a la derecha: [color del punto, título, texto].
+const PERKS: [string, string, string][] = [
+  ['bg-accent', 'Envío en el día', 'en moto, o en auto si es voluminoso'],
+  ['bg-warm', 'A medida:', 'plantillas, férulas y ortesis hechas en nuestro taller'],
+  ['bg-[var(--art-soft)]', 'Mercado Pago', 'con tarjeta, débito o dinero en cuenta'],
+]
+
 type View = { kind: 'none' } | { kind: 'product'; id: string } | { kind: 'cart' } | { kind: 'checkout' }
 
 function Store() {
@@ -49,32 +56,44 @@ function Store() {
       <Header query={query} onQuery={setQuery} cartCount={cart.count} onOpenCart={() => setView({ kind: 'cart' })} />
 
       <main className="wrap">
-        <section className="intro">
+        <section className="grid items-end gap-6 pt-7 pb-2 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <div>
-            <h1>Ortopedia y productos para tu recuperación, con envío en el día en Gran Mendoza</h1>
-            <p>Fajas, rodilleras, medias de compresión, andadores y sillas de ruedas. También fabricamos plantillas, férulas y ortesis a medida en nuestro taller. Poné tu dirección y el costo de envío se calcula al instante.</p>
+            <h1 className="font-display text-[clamp(28px,4.4vw,44px)] leading-[1.05] font-bold tracking-[-0.02em] text-balance">
+              Ortopedia y productos para tu recuperación, con envío en el día en Gran Mendoza
+            </h1>
+            <p className="mt-2.5 max-w-[56ch] text-muted">
+              Fajas, rodilleras, medias de compresión, andadores y sillas de ruedas. También fabricamos plantillas, férulas y ortesis a medida en
+              nuestro taller. Poné tu dirección y el costo de envío se calcula al instante.
+            </p>
           </div>
-          <div className="perks">
-            <div className="perk"><span className="dot" style={{ background: 'var(--accent)' }} /><span><b>Envío en el día</b> en moto, o en auto si es voluminoso</span></div>
-            <div className="perk"><span className="dot" style={{ background: 'var(--warm)' }} /><span><b>A medida</b>: plantillas, férulas y ortesis hechas en nuestro taller</span></div>
-            <div className="perk"><span className="dot" style={{ background: 'var(--art-soft)' }} /><span><b>Mercado Pago</b> con tarjeta, débito o dinero en cuenta</span></div>
-          </div>
+          <ul className="flex flex-col gap-2 text-sm">
+            {PERKS.map(([dot, title, text]) => (
+              <li key={title} className="flex items-center gap-2.5 rounded-[10px] border border-line bg-surface px-3 py-2.5">
+                <span className={`size-2.5 flex-none rounded-full ${dot}`} />
+                <span>
+                  <b className="font-semibold">{title}</b> {text}
+                </span>
+              </li>
+            ))}
+          </ul>
         </section>
 
-        <div className="filters" role="group" aria-label="Categorías">
+        <div className="flex flex-wrap items-center gap-2 pt-5 pb-3" role="group" aria-label="Categorías">
           {CATEGORIES.map((c) => (
             <button key={c} className="chip" aria-pressed={c === category} onClick={() => setCategory(c)}>
               {c}
             </button>
           ))}
-          <span className="count">
+          <span className="ml-auto text-[13px] text-muted">
             {products.length} {products.length === 1 ? 'producto' : 'productos'}
           </span>
         </div>
 
-        <section className="grid" aria-live="polite">
+        <section className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4 pb-12" aria-live="polite">
           {products.length === 0 && (
-            <div className="empty">No encontramos productos para “{query}”. Probá con la zona del cuerpo o lo que necesitás, por ejemplo rodilla, lumbar o baño.</div>
+            <div className="col-span-full rounded-xl border border-dashed border-line bg-surface p-10 text-center text-muted">
+              No encontramos productos para “{query}”. Probá con la zona del cuerpo o lo que necesitás, por ejemplo rodilla, lumbar o baño.
+            </div>
           )}
           {products.map((p) => (
             <ProductCard key={p.id} product={p} onOpen={() => setView({ kind: 'product', id: p.id })} onAdd={() => add(p.id)} />
@@ -82,8 +101,8 @@ function Store() {
         </section>
       </main>
 
-      <footer>
-        <div className="wrap">
+      <footer className="border-t border-line bg-surface text-[13px] text-muted">
+        <div className="wrap flex flex-wrap justify-between gap-3 py-5">
           <span>Ortopedia Andina · {STORE_ADDRESS} (dirección de ejemplo)</span>
           <span>Precios en pesos argentinos, IVA incluido</span>
         </div>
@@ -110,7 +129,11 @@ function Store() {
           }}
         />
       )}
-      {toast && <div className="toast">{toast}</div>}
+      {toast && (
+        <div className="fixed bottom-[calc(20px+env(safe-area-inset-bottom))] left-1/2 z-[80] -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-bg">
+          {toast}
+        </div>
+      )}
     </>
   )
 }
