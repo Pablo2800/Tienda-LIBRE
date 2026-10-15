@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { findProduct } from '../data/products'
+import { parseCartKey } from '../data/products'
 
 type Cart = Record<string, number>
 
@@ -13,11 +13,13 @@ interface CartValue {
 }
 
 const CartContext = createContext<CartValue | null>(null)
-const KEY = 'cuyo-cart'
+const KEY = 'ortopedia-cart'
 
 function load(): Cart {
   try {
-    return JSON.parse(localStorage.getItem(KEY) || '{}')
+    const saved: Cart = JSON.parse(localStorage.getItem(KEY) || '{}')
+    // Descarta productos que ya no están en el catálogo.
+    return Object.fromEntries(Object.entries(saved).filter(([k]) => parseCartKey(k).product))
   } catch {
     return {}
   }
@@ -39,7 +41,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return {
       items,
       count: entries.reduce((a, [, n]) => a + n, 0),
-      subtotal: entries.reduce((a, [id, n]) => a + (findProduct(id)?.price ?? 0) * n, 0),
+      subtotal: entries.reduce((a, [id, n]) => a + (parseCartKey(id).product?.price ?? 0) * n, 0),
       add: (id) => setItems((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 })),
       change: (id, delta) =>
         setItems((c) => {

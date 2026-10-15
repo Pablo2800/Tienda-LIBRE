@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useCart } from '../context/CartContext'
-import { findProduct } from '../data/products'
+import { parseCartKey } from '../data/products'
 import { ars } from '../lib/format'
 import { quoteDelivery, STORE_ADDRESS, ZONES, type Quote } from '../lib/shipping'
 import { BrandMark } from './BrandMark'
@@ -21,6 +21,9 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
   const [quoting, setQuoting] = useState(false)
   const [paying, setPaying] = useState(false)
   const [orderId, setOrderId] = useState('')
+  const lines = Object.entries(items).map(([key, n]) => ({ key, n, ...parseCartKey(key) }))
+  const vehicle = lines.some((l) => l.product?.bulky) ? 'auto' : 'moto'
+  const hasCustom = lines.some((l) => l.product?.madeToMeasure)
 
   // Pide una cotización nueva cuando cambia la dirección (con una pequeña espera mientras se tipea).
   useEffect(() => {
@@ -32,7 +35,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
     let cancelled = false
     setQuoting(true)
     const t = setTimeout(async () => {
-      const q = await quoteDelivery(street, zone)
+      const q = await quoteDelivery(street, zone, vehicle)
       if (!cancelled) {
         setQuote(q)
         setQuoting(false)
@@ -42,7 +45,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
       cancelled = true
       clearTimeout(t)
     }
-  }, [ship, zone, street])
+  }, [ship, zone, street, vehicle])
 
   const shipFee = ship === 'moto' && quote?.ok ? quote.fee : 0
   const total = subtotal + shipFee
@@ -116,13 +119,15 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
                 <label className="opt">
                   <input type="radio" name="ship" checked={ship === 'moto'} onChange={() => setShip('moto')} />
                   <span>
-                    <span className="t">Envío en moto, hoy</span>
+                    <span className="t">Envío en {vehicle}, hoy</span>
                     <br />
-                    <span className="s">Un repartidor lo retira del local y te lo lleva</span>
+                    <span className="s">
+                      {vehicle === 'auto' ? 'Tu pedido incluye un producto voluminoso, así que va en auto' : 'Un repartidor lo retira del local y te lo lleva'}
+                    </span>
                   </span>
                   <span className="p">{quote?.ok ? ars(quote.fee) : 'Cotizar'}</span>
                 </label>
-                {ship === 'moto' && <QuoteBox quoting={quoting} quote={quote} hasAddress={Boolean(zone && street.trim())} />}
+                {ship === 'moto' && <QuoteBox quoting={quoting} quote={quote} hasAddress={Boolean(zone && street.trim())} vehicle={vehicle} />}
                 <label className="opt">
                   <input type="radio" name="ship" checked={ship === 'retiro'} onChange={() => setShip('retiro')} />
                   <span>
@@ -159,7 +164,8 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
             <OrderTracking
               orderId={orderId}
               customerName={name}
-              delivery={ship === 'moto' ? { street, zone } : null}
+              delivery={ship === 'moto' ? { street, zone, vehicle } : null}
+              hasCustom={hasCustom}
               onFinish={onFinish}
             />
           )}
@@ -168,17 +174,17 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
         {step < 3 && (
           <div className="panel">
             <h3>Resumen</h3>
-            {Object.entries(items).map(([id, n]) => {
-              const p = findProduct(id)
-              return p ? (
-                <div className="row" style={{ fontSize: 14 }} key={id}>
+            {lines.map(({ key, n, product: p, size }) =>
+              p ? (
+                <div className="row" style={{ fontSize: 14 }} key={key}>
                   <span style={{ minWidth: 0 }}>
                     {n} × {p.name}
+                    {size && ` (talle ${size})`}
                   </span>
                   <span>{ars(p.price * n)}</span>
                 </div>
-              ) : null
-            })}
+              ) : null,
+            )}
             <div className="row" style={{ borderTop: '1px solid var(--line)', paddingTop: 10 }}>
               <span>Subtotal</span>
               <span>{ars(subtotal)}</span>
@@ -198,7 +204,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
   )
 }
 
-function QuoteBox({ quoting, quote, hasAddress }: { quoting: boolean; quote: Quote | null; hasAddress: boolean }) {
+function QuoteBox({ quoting, quote, hasAddress, vehicle }: { quoting: boolean; quote: Quote | null; hasAddress: boolean; vehicle: string }) {
   if (quoting)
     return (
       <div className="quote">
@@ -212,7 +218,7 @@ function QuoteBox({ quoting, quote, hasAddress }: { quoting: boolean; quote: Quo
   if (!quote.ok)
     return (
       <div className="quote" style={{ borderColor: 'var(--warn)' }}>
-        <b>Sin cobertura de moto para esa zona</b>
+        <b>Sin cobertura de envío en {vehicle} para esa zona</b>
         <span>Podés elegir retiro en local.</span>
       </div>
     )

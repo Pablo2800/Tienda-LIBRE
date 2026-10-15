@@ -5,6 +5,8 @@
 
 export const STORE_ADDRESS = 'Av. San Martín 1200, Ciudad de Mendoza'
 
+export type Vehicle = 'moto' | 'auto'
+
 // Departamentos de Gran Mendoza con distancia aproximada en km desde el local.
 export const ZONES: { name: string; km: number }[] = [
   { name: 'Ciudad de Mendoza', km: 2.5 },
@@ -18,14 +20,16 @@ export const ZONES: { name: string; km: number }[] = [
 
 const MAX_KM = 20
 
-export type Quote = { ok: true; km: number; fee: number; etaMinutes: number } | { ok: false }
+export type Quote = { ok: true; km: number; fee: number; etaMinutes: number; vehicle: Vehicle } | { ok: false }
 
-export async function quoteDelivery(street: string, zone: string): Promise<Quote> {
+// Los productos voluminosos (sillas de ruedas, andadores) no entran en una moto y van en auto.
+export async function quoteDelivery(street: string, zone: string, vehicle: Vehicle): Promise<Quote> {
   const z = ZONES.find((x) => x.name === zone)
   if (!z) return { ok: false }
   await new Promise((r) => setTimeout(r, 900))
   const jitter = ([...street].reduce((a, c) => a + c.charCodeAt(0), 0) % 10) / 5
   const km = z.km + jitter
   if (km > MAX_KM) return { ok: false }
-  return { ok: true, km, fee: Math.round((2200 + km * 520) / 50) * 50, etaMinutes: Math.round(25 + km * 2.2) }
+  const [base, perKm] = vehicle === 'auto' ? [4800, 950] : [2200, 520]
+  return { ok: true, km, vehicle, fee: Math.round((base + km * perKm) / 50) * 50, etaMinutes: Math.round(25 + km * 2.2) }
 }
