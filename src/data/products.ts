@@ -58,6 +58,9 @@ export const PRODUCTS: Product[] = [
     indication: 'Túnel carpiano, tendinitis, postoperatorio y fracturas estables de muñeca',
     detail: 'Termoplástico de baja temperatura con cierres de abrojo',
     madeToMeasure: true, price: 62000, stock: 99, kind: 'splint',
+    media: [
+      { type: 'image', src: '/productos/ferula-termomoldeadas.jpeg', alt: 'Vista superior de la férula' },
+    ]
   },
   {
     id: 'ortesis-bajo-molde', category: 'Férulas y ortesis', name: 'Ortesis termoplástica bajo molde de yeso (AFO)', brand: 'Taller propio',
