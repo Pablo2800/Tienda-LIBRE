@@ -13,6 +13,13 @@ npm run dev      # http://localhost:5173
 npm run build    # genera dist/ para publicar
 ```
 
+## Estilos
+
+Los estilos usan [Tailwind CSS](https://tailwindcss.com) (v4, plugin de Vite). Casi todo se escribe con clases en el JSX.
+
+- Los colores de la marca están como variables al principio de `src/index.css`, con su versión para modo oscuro. `@theme` los expone como clases: `bg-surface`, `text-muted`, `border-line`, `bg-accent`, etc. Para cambiar la paleta, tocá solo esas variables.
+- Las piezas que se repiten (`btn-primary`, `btn-ghost`, `chip`, `panel`, `price`, `hint`, `eyebrow`…) están definidas una sola vez en `@layer components`, en el mismo archivo.
+
 ## Estructura
 
 - `src/data/products.ts`: catálogo de ejemplo (después viene de una base de datos).
