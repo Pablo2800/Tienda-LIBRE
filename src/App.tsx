@@ -5,7 +5,7 @@ import { Header } from './components/Header'
 import { ProductCard } from './components/ProductCard'
 import { ProductModal } from './components/ProductModal'
 import { CartProvider, useCart } from './context/CartContext'
-import { CATEGORIES, PRODUCTS, findProduct } from './data/products'
+import { CATEGORIES, PRODUCTS, cartKey, findProduct } from './data/products'
 import { STORE_ADDRESS } from './lib/shipping'
 
 type View = { kind: 'none' } | { kind: 'product'; id: string } | { kind: 'cart' } | { kind: 'checkout' }
@@ -20,7 +20,7 @@ function Store() {
   const products = useMemo(() => {
     const t = query.trim().toLowerCase()
     return PRODUCTS.filter(
-      (p) => (category === 'Todos' || p.category === category) && (!t || [p.name, p.fits, p.code, p.brand].join(' ').toLowerCase().includes(t)),
+      (p) => (category === 'Todos' || p.category === category) && (!t || [p.name, p.indication, p.detail, p.category, p.brand].join(' ').toLowerCase().includes(t)),
     )
   }, [category, query])
 
@@ -51,13 +51,13 @@ function Store() {
       <main className="wrap">
         <section className="intro">
           <div>
-            <h1>Toner, cartuchos y tambores con envío en el día en Gran Mendoza</h1>
-            <p>Elegí el producto, poné tu dirección y el costo de envío se calcula al instante. Un repartidor lo retira del local y te lo lleva.</p>
+            <h1>Ortopedia y productos para tu recuperación, con envío en el día en Gran Mendoza</h1>
+            <p>Fajas, rodilleras, medias de compresión, andadores y sillas de ruedas. También fabricamos plantillas, férulas y ortesis a medida en nuestro taller. Poné tu dirección y el costo de envío se calcula al instante.</p>
           </div>
           <div className="perks">
-            <div className="perk"><span className="dot" style={{ background: 'var(--c)' }} /><span><b>Envío en moto</b> cotizado según tu dirección</span></div>
-            <div className="perk"><span className="dot" style={{ background: 'var(--m)' }} /><span><b>Mercado Pago</b> con tarjeta, débito o dinero en cuenta</span></div>
-            <div className="perk"><span className="dot" style={{ background: 'var(--y)' }} /><span><b>Retiro en local</b> sin cargo</span></div>
+            <div className="perk"><span className="dot" style={{ background: 'var(--accent)' }} /><span><b>Envío en el día</b> en moto, o en auto si es voluminoso</span></div>
+            <div className="perk"><span className="dot" style={{ background: 'var(--warm)' }} /><span><b>A medida</b>: plantillas, férulas y ortesis hechas en nuestro taller</span></div>
+            <div className="perk"><span className="dot" style={{ background: 'var(--art-soft)' }} /><span><b>Mercado Pago</b> con tarjeta, débito o dinero en cuenta</span></div>
           </div>
         </section>
 
@@ -74,7 +74,7 @@ function Store() {
 
         <section className="grid" aria-live="polite">
           {products.length === 0 && (
-            <div className="empty">No encontramos productos para “{query}”. Probá con el modelo de tu impresora, por ejemplo M102 o L3150.</div>
+            <div className="empty">No encontramos productos para “{query}”. Probá con la zona del cuerpo o lo que necesitás, por ejemplo rodilla, lumbar o baño.</div>
           )}
           {products.map((p) => (
             <ProductCard key={p.id} product={p} onOpen={() => setView({ kind: 'product', id: p.id })} onAdd={() => add(p.id)} />
@@ -84,7 +84,7 @@ function Store() {
 
       <footer>
         <div className="wrap">
-          <span>Cuyo Insumos · {STORE_ADDRESS} (dirección de ejemplo)</span>
+          <span>Ortopedia Andina · {STORE_ADDRESS} (dirección de ejemplo)</span>
           <span>Precios en pesos argentinos, IVA incluido</span>
         </div>
       </footer>
@@ -93,8 +93,8 @@ function Store() {
         <ProductModal
           product={openProduct}
           onClose={close}
-          onAdd={() => {
-            add(openProduct.id)
+          onAdd={(size) => {
+            add(cartKey(openProduct.id, size))
             setView({ kind: 'cart' })
           }}
         />

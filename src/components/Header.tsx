@@ -20,7 +20,7 @@ export function Header({ query, onQuery, cartCount, onOpenCart }: Props) {
         <div className="wrap">
           <div className="brand">
             <BrandMark />
-            Cuyo Insumos
+            Ortopedia Andina
           </div>
           <label className="search">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -31,7 +31,7 @@ export function Header({ query, onQuery, cartCount, onOpenCart }: Props) {
               type="search"
               value={query}
               onChange={(e) => onQuery(e.target.value)}
-              placeholder="Buscá por modelo de impresora o código (ej. CF219A, M402)"
+              placeholder="Buscá por producto o necesidad (ej. rodilla, lumbar, baño)"
               aria-label="Buscar productos"
             />
           </label>

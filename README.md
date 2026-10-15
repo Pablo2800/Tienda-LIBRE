@@ -1,6 +1,6 @@
-# Cuyo Insumos (demo)
+# Ortopedia Andina (demo)
 
-Tienda online de insumos de impresión con envío en el día en Gran Mendoza.
+Tienda online de ortopedia con envío en el día en Gran Mendoza.
 Esta primera etapa es una demo navegable para mostrarle al cliente: catálogo,
 buscador, carrito, checkout con cotización de envío según la dirección, pago y
 seguimiento del pedido. El envío y el pago están **simulados**.
@@ -20,6 +20,17 @@ npm run build    # genera dist/ para publicar
 - `src/context/CartContext.tsx`: carrito, guardado en el navegador.
 - `src/components/`: header, tarjetas, detalle de producto, carrito, checkout y seguimiento.
 
+## Campos de un producto
+
+En `src/data/products.ts`, además de nombre, precio y stock:
+
+- `indication`: para qué sirve, en palabras del paciente. El buscador también busca acá.
+- `detail`: material, medidas o presentación.
+- `sizes`: talles disponibles. Si tiene, hay que elegir uno antes de agregarlo al carrito.
+- `madeToMeasure`: se fabrica a medida. Se muestra "desde" en el precio y, después de la compra, el aviso de que se coordina la toma de molde.
+- `bulky`: no entra en una moto (silla de ruedas, andador). El envío se cotiza en auto.
+- `kind`: qué ilustración usar mientras no haya fotos.
+
 ## Fotos y videos de un producto
 
 Cada producto puede tener una lista `media` en `src/data/products.ts`. Si tiene
@@ -28,9 +39,9 @@ ninguno, se ve la ilustración genérica. Los archivos van en `public/productos/
 
 ```ts
 media: [
-  { type: 'image', src: '/productos/cf219a/frente.jpg', alt: 'Vista frontal' },
-  { type: 'video', src: '/productos/cf219a/video.mp4', poster: '/productos/cf219a/video-poster.jpg' },
-  { type: 'youtube', id: 'ID_DEL_VIDEO', title: 'Cómo cambiar el tambor' },
+  { type: 'image', src: '/productos/plantillas-a-medida/frente.jpg', alt: 'Vista frontal' },
+  { type: 'video', src: '/productos/plantillas-a-medida/video.mp4', poster: '/productos/plantillas-a-medida/video-poster.jpg' },
+  { type: 'youtube', id: 'ID_DEL_VIDEO', title: 'Cómo colocar la plantilla' },
 ],
 ```
 

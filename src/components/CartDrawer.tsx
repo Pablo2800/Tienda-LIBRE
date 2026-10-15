@@ -1,5 +1,5 @@
 import { useCart } from '../context/CartContext'
-import { findProduct } from '../data/products'
+import { parseCartKey } from '../data/products'
 import { ars } from '../lib/format'
 import { ProductArt } from './ProductArt'
 
@@ -23,7 +23,7 @@ export function CartDrawer({ onClose, onCheckout }: { onClose: () => void; onChe
             </p>
           )}
           {ids.map((id) => {
-            const p = findProduct(id)
+            const { product: p, size } = parseCartKey(id)
             if (!p) return null
             return (
               <div className="line" key={id}>
@@ -34,6 +34,7 @@ export function CartDrawer({ onClose, onCheckout }: { onClose: () => void; onChe
                   <div className="name" style={{ fontSize: 14 }}>
                     {p.name}
                   </div>
+                  {(size || p.madeToMeasure) && <div className="line-meta">{size ? `Talle ${size}` : 'A medida'}</div>}
                   <div className="qty">
                     <button onClick={() => change(id, -1)} aria-label="Quitar uno">
                       −
