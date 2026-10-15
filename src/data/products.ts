@@ -1,6 +1,13 @@
 export type InkColor = 'c' | 'm' | 'y' | 'k'
 export type ProductKind = 'toner' | 'drum' | 'ink' | 'bottle' | 'paper'
 
+// Fotos y videos del producto. Los archivos van en public/productos/<id>/.
+// Si un producto no tiene media, se muestra la ilustración genérica.
+export type Media =
+  | { type: 'image'; src: string; alt?: string }
+  | { type: 'video'; src: string; poster?: string }
+  | { type: 'youtube'; id: string; title?: string }
+
 export interface Product {
   id: string
   category: string
@@ -13,11 +20,19 @@ export interface Product {
   color: InkColor
   kind: ProductKind
   code: string
+  media?: Media[]
 }
 
 // Catálogo de ejemplo para la demo. Más adelante viene de la base de datos.
 export const PRODUCTS: Product[] = [
-  { id: 'cf219a', category: 'Tambores', name: 'Férulas termomoldeadas', brand: 'Genérico', fits: 'HP LaserJet Pro M102, M104, MFP M130, M132', yield: '12.000 págs.', price: 38900, stock: 14, color: 'k', kind: 'drum', code: 'CF219A' },
+  { id: 'cf219a', category: 'Tambores', name: 'Férulas termomoldeadas', brand: 'Genérico', fits: 'HP LaserJet Pro M102, M104, MFP M130, M132', yield: '12.000 págs.', price: 38900, stock: 14, color: 'k', kind: 'drum', code: 'CF219A',
+    media: [
+      { type: 'image', src: '/productos/cf219a/frente.svg', alt: 'Vista frontal' },
+      { type: 'image', src: '/productos/cf219a/lateral.svg', alt: 'Vista lateral del tambor' },
+      { type: 'video', src: '/productos/cf219a/video.mp4', poster: '/productos/cf219a/video-poster.jpg' },
+      { type: 'image', src: '/productos/cf219a/caja.svg', alt: 'Presentación en caja' },
+    ],
+  },
   { id: 'cf226a', category: 'Toner', name: 'Medias de compresión', brand: 'Genérico', fits: 'HP LaserJet Pro M402, MFP M426', yield: '3.100 págs.', price: 27500, stock: 22, color: 'k', kind: 'toner', code: 'CF226A' },
   { id: 'tn1060', category: 'Toner', name: 'Suplemento de inodoro', brand: 'Genérico', fits: 'Brother HL-1112, DCP-1512, MFC-1810', yield: '1.000 págs.', price: 14900, stock: 31, color: 'k', kind: 'toner', code: 'TN-1060' },
   { id: 'cf283a', category: 'Toner', name: 'Inodoro Portátil', brand: 'Genérico', fits: 'HP LaserJet Pro M125, M127, M201, M225', yield: '1.500 págs.', price: 18700, stock: 3, color: 'k', kind: 'toner', code: 'CF283A' },

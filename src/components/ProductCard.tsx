@@ -10,10 +10,14 @@ interface Props {
 }
 
 export function ProductCard({ product: p, onOpen, onAdd }: Props) {
+  const first = p.media?.[0]
+  const cover = first?.type === 'image' ? first.src : first?.type === 'video' ? first.poster : undefined
+  const mediaCount = p.media?.length ?? 0
   return (
     <article className="card">
       <button className="thumb thumb-btn" onClick={onOpen} aria-label={`Ver ${p.name}`}>
-        <ProductArt product={p} />
+        {cover ? <img className="cover" src={cover} alt="" /> : <ProductArt product={p} />}
+        {mediaCount > 1 && <span className="media-count">{mediaCount} fotos y videos</span>}
       </button>
       <div className="info">
         <span className="cat">
