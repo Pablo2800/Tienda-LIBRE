@@ -27,9 +27,9 @@ export function OrderTracking({ orderId, customerName, delivery, hasCustom, onFi
 
   return (
     <div className="panel">
-      <h3>¡Gracias, {customerName.split(' ')[0] || 'listo'}!</h3>
-      <p style={{ margin: 0 }}>
-        Pedido <span className="order-id">#{orderId}</span>.{' '}
+      <h3 className="panel-title">¡Gracias, {customerName.split(' ')[0] || 'listo'}!</h3>
+      <p>
+        Pedido <span className="rounded-md border border-line bg-bg px-2 py-0.5 font-mono text-[13px]">#{orderId}</span>.{' '}
         {delivery ? `Lo enviamos a ${delivery.street}, ${delivery.zone}.` : 'Te esperamos en el local.'}
       </p>
       {hasCustom && (
@@ -38,10 +38,14 @@ export function OrderTracking({ orderId, customerName, delivery, hasCustom, onFi
           <span>Te escribimos por WhatsApp para coordinar la toma de molde en el local. Los productos a medida se entregan cuando están listos, en 7 a 10 días hábiles.</span>
         </div>
       )}
-      <div className="track">
+      <div className="my-1 flex flex-col">
         {steps.map((s, i) => (
-          <div key={s} className={`ts ${i < progress ? 'done' : i === progress ? 'now' : 'pending'}`}>
-            <span className="b" />
+          <div key={s} className={`grid grid-cols-[22px_minmax(0,1fr)_auto] items-start gap-3 py-2.5 ${i > progress ? 'text-muted' : ''}`}>
+            <span
+              className={`mt-1 ml-1 size-3.5 rounded-full border-2 ${
+                i < progress ? 'border-ok bg-ok' : i === progress ? 'border-accent bg-surface ring-4 ring-accent-soft' : 'border-line bg-surface'
+              }`}
+            />
             <span>
               {s}
               {delivery && i === 2 && progress >= 2 && (
@@ -51,7 +55,7 @@ export function OrderTracking({ orderId, customerName, delivery, hasCustom, onFi
                 </>
               )}
             </span>
-            <span className="tm">{i <= progress ? time(i) : ''}</span>
+            <span className="font-mono text-xs text-muted">{i <= progress ? time(i) : ''}</span>
           </div>
         ))}
       </div>
@@ -60,7 +64,7 @@ export function OrderTracking({ orderId, customerName, delivery, hasCustom, onFi
           ? 'En la versión real cada paso llega por webhook del servicio de envíos y se le avisa al cliente por email o WhatsApp. Acá avanza solo para mostrar el flujo.'
           : 'En la versión real se avisa al cliente por email cuando está listo.'}
       </span>
-      <button className="ghost" onClick={onFinish}>
+      <button className="btn-ghost" onClick={onFinish}>
         Volver a la tienda
       </button>
     </div>
