@@ -1,6 +1,6 @@
 import type { Product } from '../data/products'
 import { ars } from '../lib/format'
-import { ProductArt } from './ProductArt'
+import { MediaCarousel } from './MediaCarousel'
 import { Stock } from './Stock'
 
 interface Props {
@@ -18,9 +18,7 @@ export function ProductModal({ product: p, onClose, onAdd }: Props) {
           <button className="x" onClick={onClose} aria-label="Cerrar">
             ×
           </button>
-          <div className="thumb">
-            <ProductArt product={p} />
-          </div>
+          <MediaCarousel product={p} />
           <div className="pd">
             <span className="cat">
               {p.category} · {p.brand}
