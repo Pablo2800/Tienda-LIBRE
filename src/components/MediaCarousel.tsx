@@ -5,7 +5,7 @@ import { ProductArt } from './ProductArt'
 // Clases largas que se repiten, separadas para que el JSX se lea mejor.
 const GALLERY = 'flex min-w-0 flex-col gap-2.5 border-line bg-bg p-3.5 max-md:border-b md:border-r focus-visible:-outline-offset-2'
 const STAGE =
-  'relative grid aspect-[4/3] max-w-full touch-pan-y place-items-center overflow-hidden rounded-[10px] bg-surface select-none md:aspect-square [&>svg]:w-[70%] [&>img,&>video,&>iframe]:size-full [&>img,&>video,&>iframe]:object-contain [&>video]:bg-black'
+  'relative grid aspect-[4/3] max-w-full touch-pan-y h-full place-items-center overflow-hidden rounded-[10px] bg-surface select-none md:aspect-square [&>svg]:w-[70%] [&>img,&>video,&>iframe]:size-full [&>img,&>video,&>iframe]:object-contain [&>video]:bg-black'
 const NAV =
   'absolute top-1/2 grid size-[38px] -translate-y-1/2 place-items-center rounded-full border border-line bg-surface pb-[3px] text-2xl leading-none text-ink shadow-[0_2px_8px_rgba(0,0,0,.12)]'
 

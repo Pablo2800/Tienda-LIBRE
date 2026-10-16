@@ -29,7 +29,7 @@ export function ProductModal({ product: p, onClose, onAdd }: Props) {
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div
-          className="relative grid max-h-[calc(100%-32px)] w-full max-w-[820px] overflow-auto rounded-[14px] bg-surface shadow-modal md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"
+          className="relative grid max-h-[calc(100%-32px)] w-full max-w-205 overflow-auto rounded-[14px] bg-surface shadow-modal md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"
           role="dialog"
           aria-modal="true"
           aria-label={p.name}
@@ -49,8 +49,8 @@ export function ProductModal({ product: p, onClose, onAdd }: Props) {
               <tbody>
                 {specs.map(([label, value]) => (
                   <tr key={label} className="border-b border-line align-top">
-                    <td className="w-[42%] py-[7px] text-muted">{label}</td>
-                    <td className="py-[7px]">{value}</td>
+                    <td className="w-[42%] py-1.75 text-muted">{label}</td>
+                    <td className="py-1.75">{value}</td>
                   </tr>
                 ))}
               </tbody>

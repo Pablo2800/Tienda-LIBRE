@@ -18,7 +18,7 @@ export function ProductCard({ product: p, onOpen, onAdd }: Props) {
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-line bg-surface hover:border-accent">
       <button
-        className="relative grid aspect-[4/3] w-full place-items-center overflow-hidden border-b border-line bg-bg [&>svg]:w-[70%]"
+        className="relative grid aspect-4/3 h-96 w-full place-items-center overflow-hidden border-b border-line bg-bg [&>svg]:w-[70%]"
         onClick={onOpen}
         aria-label={`Ver ${p.name}`}
       >
@@ -38,7 +38,7 @@ export function ProductCard({ product: p, onOpen, onAdd }: Props) {
         <Stock product={p} />
         <div className="mt-auto flex items-center justify-between pt-2">
           <Price product={p} />
-          <button className="rounded-lg bg-accent px-3 py-[9px] font-semibold text-accent-ink" onClick={needsChoice ? onOpen : onAdd}>
+          <button className="rounded-lg bg-accent px-3 py-2.25 font-semibold text-accent-ink" onClick={needsChoice ? onOpen : onAdd}>
             {needsChoice ? 'Elegir talle' : 'Agregar'}
           </button>
         </div>
