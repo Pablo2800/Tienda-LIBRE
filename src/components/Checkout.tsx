@@ -231,11 +231,14 @@ function QuoteBox({ quoting, quote, hasAddress, vehicle }: { quoting: boolean; q
     <div className="quote">
       <b>Cotización recibida: {ars(quote.fee)}</b>
       <span>
-        {quote.km.toFixed(1)} km desde el local · llega en {quote.etaMinutes} min aprox.
+        {quote.source === 'simulado' && `${quote.km.toFixed(1)} km desde el local · `}llega en {quote.etaMinutes} min aprox.
       </span>
-      <span className="hint">
-        En la versión real este precio lo devuelve la API de envíos (<code className="font-mono text-xs">POST /delivery_quotes</code>). Acá está simulado por distancia.
-      </span>
+      {quote.source === 'simulado' && (
+        <span className="hint">
+          Precio de ejemplo calculado por distancia. Cuando se carguen las credenciales de Uber Direct, este precio lo devuelve su API (
+          <code className="font-mono text-xs">POST /delivery_quotes</code>).
+        </span>
+      )}
     </div>
   )
 }
