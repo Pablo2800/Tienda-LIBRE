@@ -5,6 +5,7 @@ import { ars } from '../lib/format'
 import { quoteDelivery, STORE_ADDRESS, ZONES, type Quote } from '../lib/shipping'
 import { BrandMark } from './BrandMark'
 import { OrderTracking } from './OrderTracking'
+import { savePendingOrder } from '../lib/pendingOrder'
 
 type Ship = '' | 'moto' | 'retiro'
 const STEPS = ['Datos y envío', 'Pago', 'Seguimiento']
@@ -25,6 +26,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
   const [quote, setQuote] = useState<Quote | null>(null)
   const [quoting, setQuoting] = useState(false)
   const [paying, setPaying] = useState(false)
+  const [payError, setPayError] = useState('')
   const [orderId, setOrderId] = useState('')
   const lines = Object.entries(items).map(([key, n]) => ({ key, n, ...parseCartKey(key) }))
   const vehicle = lines.some((l) => l.product?.bulky) ? 'auto' : 'moto'
@@ -56,8 +58,31 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
   const total = subtotal + shipFee
   const ready = Boolean(name.trim() && phone.trim() && (ship === 'retiro' || (ship === 'moto' && quote?.ok)))
 
-  function pay() {
+  // Con Mercado Pago configurado, crea el pago en el servidor y redirige a su checkout.
+  // Si no está configurado (o no hay servidor), simula el pago para la demo.
+  async function pay() {
     setPaying(true)
+    setPayError('')
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, name, phone, ship, street, zone }),
+      })
+      if (res.headers.get('content-type')?.includes('application/json') && res.status !== 503) {
+        const data = await res.json()
+        if (res.ok && data.url) {
+          savePendingOrder({ orderId: data.orderId, name, street, zone, vehicle, delivery: ship === 'moto', hasCustom })
+          window.location.href = data.url
+          return
+        }
+        setPayError(data.error === 'no_coverage' ? 'No hay cobertura de envío para esa dirección.' : 'No pudimos iniciar el pago. Probá de nuevo en unos minutos.')
+        setPaying(false)
+        return
+      }
+    } catch {
+      // Sin servidor: seguimos con el pago simulado.
+    }
     setTimeout(() => {
       setOrderId(String(Math.floor(10000 + Math.random() * 89999)))
       setStep(3)
@@ -153,12 +178,11 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
           {step === 2 && (
             <div className="panel">
               <h3 className="panel-title">Pago</h3>
-              <p className="hint">
-                En la versión real este botón abre el checkout de Mercado Pago y vuelve a la tienda cuando se aprueba el pago.
-              </p>
+              <p className="hint">Pagás en Mercado Pago con tarjeta, débito o dinero en cuenta, y volvés a la tienda al terminar.</p>
               <button className="w-full rounded-[10px] bg-mercadopago px-4 py-[13px] text-base font-bold text-white disabled:opacity-60" onClick={pay} disabled={paying}>
                 {paying ? 'Procesando pago…' : `Pagar ${ars(total)} con Mercado Pago`}
               </button>
+              {payError && <span className="text-sm text-warn">{payError}</span>}
               <button className="btn-ghost" onClick={() => setStep(1)} disabled={paying}>
                 Volver
               </button>

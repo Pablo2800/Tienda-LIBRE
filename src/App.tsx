@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CartDrawer } from './components/CartDrawer'
 import { Checkout } from './components/Checkout'
 import { Header } from './components/Header'
+import { PaymentReturn } from './components/PaymentReturn'
 import { ProductCard } from './components/ProductCard'
 import { ProductModal } from './components/ProductModal'
 import { CartProvider, useCart } from './context/CartContext'
@@ -15,13 +16,28 @@ const PERKS: [string, string, string][] = [
   ['bg-[var(--art-soft)]', 'Mercado Pago', 'con tarjeta, débito o dinero en cuenta'],
 ]
 
-type View = { kind: 'none' } | { kind: 'product'; id: string } | { kind: 'cart' } | { kind: 'checkout' }
+type View =
+  | { kind: 'none' }
+  | { kind: 'product'; id: string }
+  | { kind: 'cart' }
+  | { kind: 'checkout' }
+  | { kind: 'return'; orderId: string; paymentId: string | null }
+
+// Al volver de Mercado Pago la URL trae ?pedido=...&payment_id=...
+function initialView(): View {
+  const params = new URLSearchParams(window.location.search)
+  const orderId = params.get('pedido')
+  if (!orderId) return { kind: 'none' }
+  window.history.replaceState(null, '', window.location.pathname)
+  const paymentId = params.get('payment_id')
+  return { kind: 'return', orderId, paymentId: paymentId && paymentId !== 'null' ? paymentId : null }
+}
 
 function Store() {
   const cart = useCart()
   const [category, setCategory] = useState('Todos')
   const [query, setQuery] = useState('')
-  const [view, setView] = useState<View>({ kind: 'none' })
+  const [view, setView] = useState<View>(initialView)
   const [toast, setToast] = useState('')
 
   const products = useMemo(() => {
@@ -33,7 +49,7 @@ function Store() {
 
   useEffect(() => {
     document.body.style.overflow = view.kind === 'none' ? '' : 'hidden'
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && view.kind !== 'checkout' && setView({ kind: 'none' })
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && view.kind !== 'checkout' && view.kind !== 'return' && setView({ kind: 'none' })
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [view])
@@ -129,6 +145,7 @@ function Store() {
           }}
         />
       )}
+      {view.kind === 'return' && <PaymentReturn orderId={view.orderId} paymentId={view.paymentId} onApproved={cart.clear} onClose={close} />}
       {toast && (
         <div className="fixed bottom-[calc(20px+env(safe-area-inset-bottom))] left-1/2 z-[80] -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-bg">
           {toast}
