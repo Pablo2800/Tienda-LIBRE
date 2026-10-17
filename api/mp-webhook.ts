@@ -4,8 +4,9 @@
 //   MP_WEBHOOK_SECRET → "Tus integraciones" > tu aplicación > Webhooks > Clave secreta.
 //                       Si está, se rechazan los avisos que no vengan firmados por Mercado Pago.
 //
-// Próximo paso: cuando el pago queda aprobado y el pedido es con envío, crear el envío en Uber Direct
-// con metadata.quote_id. Por ahora solo se registra en los logs de Vercel.
+// Actualiza el pedido en la base. Próximo paso: cuando el pago queda aprobado y el pedido
+// es con envío, crear el envío en Uber Direct con el quote_id guardado.
+import { dbConfigured, recordPayment } from './_lib/db.js'
 import { getPayment, mpConfigured, validSignature } from './_lib/mercadopago.js'
 import { json } from './_lib/uber.js'
 
@@ -23,6 +24,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const payment = await getPayment(dataId)
     console.log('mercadopago payment', { id: payment.id, status: payment.status, order: payment.external_reference })
+    if (payment.external_reference && dbConfigured()) await recordPayment(payment.external_reference, String(payment.id), payment.status)
     return json({ received: true })
   } catch (err) {
     console.error('mercadopago webhook failed', err)

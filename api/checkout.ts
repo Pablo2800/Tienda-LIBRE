@@ -9,6 +9,7 @@
 import { randomBytes } from 'node:crypto'
 import { parseCartKey } from '../src/data/products.js'
 import { simulatedQuote, ZONES } from '../src/lib/shipping.js'
+import { createOrder, dbConfigured } from './_lib/db.js'
 import { createPreference, mpConfigured, type Preference } from './_lib/mercadopago.js'
 import { json, uberQuote } from './_lib/uber.js'
 
@@ -80,6 +81,24 @@ export async function POST(request: Request): Promise<Response> {
   if (shipping > 0) items.push({ id: 'envio', title: `Envío en ${vehicle}`, quantity: 1, unit_price: shipping, currency_id: 'ARS' })
 
   try {
+    // El pedido se guarda antes de ir a pagar, como "pendiente de pago".
+    // Si la base falla, igual se cobra: la venta queda registrada en Mercado Pago.
+    if (dbConfigured()) {
+      await createOrder({
+        id: orderId,
+        name,
+        phone,
+        ship: body.ship,
+        street: body.ship === 'moto' ? (body.street ?? '').trim() : '',
+        zone: body.ship === 'moto' ? (body.zone ?? '') : '',
+        vehicle,
+        quoteId,
+        hasCustom,
+        items: items.map((i) => ({ key: i.id, title: i.title, quantity: i.quantity, unit_price: i.unit_price })),
+        shipping,
+        total: items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0),
+      }).catch((err) => console.error('save order failed', err))
+    }
     const pref = await createPreference({
       items,
       external_reference: orderId,
@@ -101,7 +120,7 @@ export async function POST(request: Request): Promise<Response> {
     })
     return json({ orderId, url: pref.init_point })
   } catch (err) {
-    console.error('mercadopago preference failed', err)
+    console.error('checkout failed', err)
     return json({ error: 'payment_upstream' }, 502)
   }
 }
