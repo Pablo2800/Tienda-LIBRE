@@ -23,7 +23,8 @@ Los estilos usan [Tailwind CSS](https://tailwindcss.com) (v4, plugin de Vite). C
 ## Estructura
 
 - `src/data/products.ts`: catálogo de ejemplo (después viene de una base de datos).
-- `src/lib/shipping.ts`: cotización de envío simulada. Acá se conecta después la API de Uber Direct (vía backend).
+- `src/lib/shipping.ts`: pide la cotización a `/api/quote`. Si no hay credenciales, usa una simulada por distancia.
+- `api/quote.ts`: función del servidor (Vercel) que cotiza con Uber Direct.
 - `src/context/CartContext.tsx`: carrito, guardado en el navegador.
 - `src/components/`: header, tarjetas, detalle de producto, carrito, checkout y seguimiento.
 
@@ -61,3 +62,14 @@ La primera imagen (o el `poster` del primer video) se usa como foto de la tarjet
 3. Pagos con Mercado Pago (Checkout Pro y webhook de confirmación).
 4. Envíos con Uber Direct: cotización, creación del envío y webhooks de estado.
 5. Dominio propio.
+
+## Envíos con Uber Direct
+
+La cotización real la hace `api/quote.ts`, que corre en el servidor para no exponer las credenciales.
+Mientras no estén cargadas, la tienda sigue mostrando el precio simulado.
+
+1. Crear la cuenta de empresa en [direct.uber.com](https://direct.uber.com) y entrar a la pestaña **Developer**.
+   Ahí están el Customer ID, el Client ID y el Client Secret. Con la barra azul arriba está en modo prueba (no crea envíos reales).
+2. En Vercel: **Settings > Environment Variables**, cargar `UBER_CLIENT_ID`, `UBER_CLIENT_SECRET` y `UBER_CUSTOMER_ID`
+   (y opcionalmente `STORE_STREET`, `STORE_CITY`, `STORE_ZIP` con la dirección del local). Después, volver a desplegar.
+3. En local: copiar `.env.example` como `.env.local`, completarlo y correr `npm run dev`.
