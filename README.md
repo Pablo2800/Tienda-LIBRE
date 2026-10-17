@@ -26,7 +26,8 @@ Los estilos usan [Tailwind CSS](https://tailwindcss.com) (v4, plugin de Vite). C
 - `src/lib/shipping.ts`: pide la cotización a `/api/quote`. Si no hay credenciales, usa una simulada por distancia.
 - `api/quote.ts`: función del servidor (Vercel) que cotiza con Uber Direct.
 - `api/checkout.ts`, `api/order.ts`, `api/mp-webhook.ts`: pago con Mercado Pago (crear el pago, confirmar el estado al volver y recibir avisos).
-- `api/_lib/`: código compartido de Uber y Mercado Pago (no se publica como ruta).
+- `api/admin-orders.ts` y `src/components/AdminPanel.tsx`: panel de pedidos en `/admin`.
+- `api/_lib/`: código compartido de Uber, Mercado Pago y la base de datos (no se publica como ruta).
 - `src/context/CartContext.tsx`: carrito, guardado en el navegador.
 - `src/components/`: header, tarjetas, detalle de producto, carrito, checkout y seguimiento.
 
@@ -90,3 +91,16 @@ Mientras no haya credenciales, el pago se simula.
 
 En local (`http://localhost`) Mercado Pago no vuelve solo a la tienda ni manda avisos: hay que tocar "Volver al sitio".
 En Vercel funciona completo.
+
+## Pedidos y panel del local
+
+Cada compra se guarda en una base de datos Postgres (Neon), primero como "Esperando pago". Cuando
+Mercado Pago aprueba el pago, pasa sola a "Pagado, para preparar". El local ve los pedidos en
+`/admin`, con la contraseña de `ADMIN_PASSWORD`, y les va cambiando el estado: preparado, enviado,
+entregado o cancelado. La tabla se crea sola la primera vez.
+
+1. En Vercel: **Storage > Create Database > Neon** y conectarla al proyecto. Eso carga `DATABASE_URL`.
+2. Cargar `ADMIN_PASSWORD` en las variables de entorno y volver a desplegar.
+3. Para usar la misma base en local, copiar `DATABASE_URL` en `.env.local`.
+
+Sin base de datos la tienda sigue cobrando, pero los pedidos solo quedan en Mercado Pago.

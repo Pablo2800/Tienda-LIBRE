@@ -1,5 +1,6 @@
 // Estado de un pago, para la pantalla a la que vuelve el cliente desde Mercado Pago.
 // Solo devuelve el estado: los datos del cliente no se exponen por esta ruta.
+import { dbConfigured, recordPayment } from './_lib/db.js'
 import { getPayment, mpConfigured } from './_lib/mercadopago.js'
 import { json } from './_lib/uber.js'
 
@@ -12,6 +13,11 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const payment = await getPayment(paymentId)
     if (payment.external_reference !== orderId) return json({ error: 'not_found' }, 404)
+    // También se registra acá, porque en local Mercado Pago no manda avisos al webhook.
+    if (dbConfigured()) {
+      // Si falla la base, igual se le muestra el resultado al cliente: el webhook lo registra después.
+      await recordPayment(orderId, String(payment.id), payment.status).catch((err) => console.error('record payment failed', err))
+    }
     return json({ status: payment.status, orderId })
   } catch (err) {
     console.error('mercadopago payment lookup failed', err)
