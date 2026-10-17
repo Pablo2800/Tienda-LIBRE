@@ -42,14 +42,17 @@ export async function quoteDelivery(street: string, zone: string, vehicle: Vehic
   } catch {
     // Sin servidor (por ejemplo, en una vista previa estática): seguimos con la simulación.
   }
-  return simulate(street, z.km, vehicle)
+  await new Promise((r) => setTimeout(r, 900))
+  return simulatedQuote(street, zone, vehicle)
 }
 
+// Precio de ejemplo por distancia. También lo usa el servidor cuando no hay credenciales de Uber.
 // Los productos voluminosos (sillas de ruedas, andadores) no entran en una moto y van en auto.
-async function simulate(street: string, zoneKm: number, vehicle: Vehicle): Promise<Quote> {
-  await new Promise((r) => setTimeout(r, 900))
+export function simulatedQuote(street: string, zone: string, vehicle: Vehicle): Quote {
+  const z = ZONES.find((x) => x.name === zone)
+  if (!z) return { ok: false }
   const jitter = ([...street].reduce((a, c) => a + c.charCodeAt(0), 0) % 10) / 5
-  const km = zoneKm + jitter
+  const km = z.km + jitter
   if (km > MAX_KM) return { ok: false }
   const [base, perKm] = vehicle === 'auto' ? [4800, 950] : [2200, 520]
   return { ok: true, source: 'simulado', km, vehicle, fee: Math.round((base + km * perKm) / 50) * 50, etaMinutes: Math.round(25 + km * 2.2) }

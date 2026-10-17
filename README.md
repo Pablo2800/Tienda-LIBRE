@@ -25,6 +25,8 @@ Los estilos usan [Tailwind CSS](https://tailwindcss.com) (v4, plugin de Vite). C
 - `src/data/products.ts`: catálogo de ejemplo (después viene de una base de datos).
 - `src/lib/shipping.ts`: pide la cotización a `/api/quote`. Si no hay credenciales, usa una simulada por distancia.
 - `api/quote.ts`: función del servidor (Vercel) que cotiza con Uber Direct.
+- `api/checkout.ts`, `api/order.ts`, `api/mp-webhook.ts`: pago con Mercado Pago (crear el pago, confirmar el estado al volver y recibir avisos).
+- `api/_lib/`: código compartido de Uber y Mercado Pago (no se publica como ruta).
 - `src/context/CartContext.tsx`: carrito, guardado en el navegador.
 - `src/components/`: header, tarjetas, detalle de producto, carrito, checkout y seguimiento.
 
@@ -73,3 +75,18 @@ Mientras no estén cargadas, la tienda sigue mostrando el precio simulado.
 2. En Vercel: **Settings > Environment Variables**, cargar `UBER_CLIENT_ID`, `UBER_CLIENT_SECRET` y `UBER_CUSTOMER_ID`
    (y opcionalmente `STORE_STREET`, `STORE_CITY`, `STORE_ZIP` con la dirección del local). Después, volver a desplegar.
 3. En local: copiar `.env.example` como `.env.local`, completarlo y correr `npm run dev`.
+
+## Pagos con Mercado Pago
+
+El botón de pago crea el cobro en el servidor (`api/checkout.ts`) y lleva al cliente al checkout de Mercado Pago.
+Los precios y el envío se recalculan en el servidor, así que no se pueden alterar desde el navegador.
+Al volver, la tienda confirma el estado del pago con Mercado Pago antes de mostrar el pedido.
+Mientras no haya credenciales, el pago se simula.
+
+1. Entrar a [Tus integraciones](https://www.mercadopago.com.ar/developers/panel/app) y crear una aplicación (tipo Checkout Pro).
+2. Copiar el **Access Token** de las credenciales de prueba como `MP_ACCESS_TOKEN` (en `.env.local` y en Vercel).
+3. Para probar, pagar con la cuenta de prueba **Comprador** que aparece en la aplicación, en una ventana de incógnito.
+4. Opcional: en **Webhooks**, copiar la clave secreta como `MP_WEBHOOK_SECRET`.
+
+En local (`http://localhost`) Mercado Pago no vuelve solo a la tienda ni manda avisos: hay que tocar "Volver al sitio".
+En Vercel funciona completo.
