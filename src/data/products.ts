@@ -45,7 +45,7 @@ export const PRODUCTS: Product[] = [
     id: 'plantillas-a-medida', category: 'Plantillas', name: 'Plantillas termomoldeadas personalizadas', brand: 'Taller propio',
     indication: 'Pie plano, pie cavo, fascitis plantar, espolón calcáneo y dolor al caminar',
     detail: 'EVA de alta densidad con forro antibacterial, moldeadas sobre tu pisada',
-    madeToMeasure: true, price: 48500, stock: 99, kind: 'insole',
+    madeToMeasure: true, price: 100, stock: 99, kind: 'insole',
     media: [
       { type: 'image', src: '/productos/plantillas-a-medida/vista-superior.svg', alt: 'Vista superior de la plantilla' },
       { type: 'image', src: '/productos/plantillas-a-medida/vista-lateral.svg', alt: 'Vista lateral con el arco' },
