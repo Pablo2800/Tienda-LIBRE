@@ -1,5 +1,3 @@
-import { BrandMark } from './BrandMark'
-
 interface Props {
   query: string
   onQuery: (q: string) => void
@@ -18,10 +16,9 @@ export function Header({ query, onQuery, cartCount, onOpenCart }: Props) {
       </div>
       <header className="sticky top-[env(safe-area-inset-top)] z-20 border-b border-line bg-surface">
         <div className="wrap flex flex-wrap items-center gap-4 py-3">
-          <div className="flex items-center gap-2 font-display text-[22px] font-bold tracking-[-0.01em] whitespace-nowrap">
-            <BrandMark />
-            Ortopedia Andina
-          </div>
+          <a href="/" className="flex-none">
+            <img src="/logo-libre.png" alt="LIBRE Salud Deportiva" width="361" height="128" className="h-11 w-auto dark:invert" />
+          </a>
           <label className="relative min-w-0 flex-[1_1_260px]">
             <svg
               className="absolute top-1/2 left-[13px] -translate-y-1/2 text-muted"

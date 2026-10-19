@@ -1,4 +1,4 @@
-# Ortopedia Andina (demo)
+# LIBRE Salud Deportiva (demo)
 
 Tienda online de ortopedia con envío en el día en Gran Mendoza.
 Esta primera etapa es una demo navegable para mostrarle al cliente: catálogo,
