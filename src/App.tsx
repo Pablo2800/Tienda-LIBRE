@@ -119,7 +119,7 @@ function Store() {
 
       <footer className="border-t border-line bg-surface text-[13px] text-muted">
         <div className="wrap flex flex-wrap justify-between gap-3 py-5">
-          <span>Ortopedia Andina · {STORE_ADDRESS} (dirección de ejemplo)</span>
+          <span>LIBRE Salud Deportiva · {STORE_ADDRESS} (dirección de ejemplo)</span>
           <span>Precios en pesos argentinos, IVA incluido</span>
         </div>
       </footer>
