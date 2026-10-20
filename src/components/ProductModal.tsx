@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Product } from '../data/products'
+import { available, type Product } from '../data/products'
 import { MediaCarousel } from './MediaCarousel'
 import { Price } from './Price'
 import { Stock } from './Stock'
@@ -13,6 +13,7 @@ interface Props {
 export function ProductModal({ product: p, onClose, onAdd }: Props) {
   const [size, setSize] = useState<string>()
   const missingSize = Boolean(p.sizes?.length) && !size
+  const soldOut = available(p) < 1
   const specs: [string, string][] = [
     ['Indicado para', p.indication],
     ['Características', p.detail],
@@ -66,8 +67,8 @@ export function ProductModal({ product: p, onClose, onAdd }: Props) {
                 <span className="hint basis-full">¿Dudas con el talle? Consultanos y te ayudamos a medir.</span>
               </div>
             ) : null}
-            <button className="btn-primary" onClick={() => onAdd(size)} disabled={missingSize}>
-              {missingSize ? 'Elegí un talle' : 'Agregar al carrito'}
+            <button className="btn-primary" onClick={() => onAdd(size)} disabled={missingSize || soldOut}>
+              {soldOut ? 'Sin stock' : missingSize ? 'Elegí un talle' : 'Agregar al carrito'}
             </button>
             <p className="hint">La información es orientativa y no reemplaza la indicación de tu médico o kinesiólogo.</p>
           </div>

@@ -22,29 +22,34 @@ Los estilos usan [Tailwind CSS](https://tailwindcss.com) (v4, plugin de Vite). C
 
 ## Estructura
 
-- `src/data/products.ts`: catálogo de ejemplo (después viene de una base de datos).
+- `src/data/products.ts`: tipos de producto y catálogo inicial. Con base de datos, el catálogo se edita en `/admin`.
 - `src/lib/shipping.ts`: pide la cotización a `/api/quote`. Si no hay credenciales, usa una simulada por distancia.
 - `api/quote.ts`: función del servidor (Vercel) que cotiza con Uber Direct.
 - `api/checkout.ts`, `api/order.ts`, `api/mp-webhook.ts`: pago con Mercado Pago (crear el pago, confirmar el estado al volver y recibir avisos).
-- `api/admin-orders.ts` y `src/components/AdminPanel.tsx`: panel de pedidos en `/admin`.
+- `api/admin-orders.ts`, `api/admin-products.ts`, `api/admin-upload.ts`, `src/components/AdminPanel.tsx` y `AdminProducts.tsx`: panel del local en `/admin` (pedidos y productos).
+- `api/products.ts` y `src/context/CatalogContext.tsx`: catálogo que ve la tienda.
 - `api/_lib/`: código compartido de Uber, Mercado Pago y la base de datos (no se publica como ruta).
 - `src/context/CartContext.tsx`: carrito, guardado en el navegador.
 - `src/components/`: header, tarjetas, detalle de producto, carrito, checkout y seguimiento.
 
 ## Campos de un producto
 
-En `src/data/products.ts`, además de nombre, precio y stock:
+Se cargan en `/admin` > Productos (o en `src/data/products.ts` para el catálogo inicial). Además de nombre, precio y stock:
 
 - `indication`: para qué sirve, en palabras del paciente. El buscador también busca acá.
 - `detail`: material, medidas o presentación.
 - `sizes`: talles disponibles. Si tiene, hay que elegir uno antes de agregarlo al carrito.
 - `madeToMeasure`: se fabrica a medida. Se muestra "desde" en el precio y, después de la compra, el aviso de que se coordina la toma de molde.
 - `bulky`: no entra en una moto (silla de ruedas, andador). El envío se cotiza en auto.
-- `kind`: qué ilustración usar mientras no haya fotos.
+- `kind`: qué ilustración usar mientras no haya fotos (solo los productos de ejemplo; los nuevos muestran el ícono de la marca).
 
 ## Fotos y videos de un producto
 
-Cada producto puede tener una lista `media` en `src/data/products.ts`. Si tiene
+Las fotos se suben desde `/admin` > Productos > Editar. El panel las achica a 1600 px y las guarda
+en Vercel Blob. Para eso hay que crear un Blob store **público** en Vercel (**Storage > Create > Blob**)
+y conectarlo al proyecto: eso carga `BLOB_READ_WRITE_TOKEN`.
+
+En el catálogo inicial, cada producto puede tener una lista `media` en `src/data/products.ts`. Si tiene
 más de un elemento, el detalle del producto muestra un carrusel; si no tiene
 ninguno, se ve la ilustración genérica. Los archivos van en `public/productos/<id>/`.
 
@@ -61,7 +66,7 @@ La primera imagen (o el `poster` del primer video) se usa como foto de la tarjet
 ## Próximas etapas
 
 1. Publicar la demo (Vercel o Netlify) para mostrarla.
-2. Backend: productos, stock y pedidos en una base de datos, con panel de administración.
+2. ~~Backend: productos, stock y pedidos en una base de datos, con panel de administración.~~ Hecho.
 3. Pagos con Mercado Pago (Checkout Pro y webhook de confirmación).
 4. Envíos con Uber Direct: cotización, creación del envío y webhooks de estado.
 5. Dominio propio.
@@ -97,10 +102,17 @@ En Vercel funciona completo.
 Cada compra se guarda en una base de datos Postgres (Neon), primero como "Esperando pago". Cuando
 Mercado Pago aprueba el pago, pasa sola a "Pagado, para preparar". El local ve los pedidos en
 `/admin`, con la contraseña de `ADMIN_PASSWORD`, y les va cambiando el estado: preparado, enviado,
-entregado o cancelado. La tabla se crea sola la primera vez.
+entregado o cancelado. Las tablas se crean solas la primera vez.
+
+En la pestaña **Productos** el local agrega, edita, ordena, oculta o borra productos, con fotos, talles
+y stock. La primera vez se copia el catálogo de `src/data/products.ts` para no arrancar vacío. Cuando un
+pago queda aprobado se descuenta el stock de lo vendido (los productos a medida no usan stock). Un
+producto sin stock se ve como "Sin stock" y no se puede comprar. Si se cancela un pedido pagado, el stock
+no vuelve solo: hay que corregirlo a mano en el producto.
 
 1. En Vercel: **Storage > Create Database > Neon** y conectarla al proyecto. Eso carga `DATABASE_URL`.
 2. Cargar `ADMIN_PASSWORD` en las variables de entorno y volver a desplegar.
 3. Para usar la misma base en local, copiar `DATABASE_URL` en `.env.local`.
 
-Sin base de datos la tienda sigue cobrando, pero los pedidos solo quedan en Mercado Pago.
+Sin base de datos la tienda usa el catálogo de `src/data/products.ts` y sigue cobrando, pero los
+pedidos solo quedan en Mercado Pago.

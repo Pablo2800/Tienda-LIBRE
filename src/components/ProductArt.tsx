@@ -4,7 +4,7 @@ import type { Product } from '../data/products'
 // Colores: --art (pieza principal), --art-soft (acolchado, tela), --metal (estructura).
 const line = { fill: 'none', stroke: 'var(--metal)', strokeWidth: 5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
 
-const SHAPES: Record<Product['kind'], React.ReactNode> = {
+const SHAPES: Record<NonNullable<Product['kind']>, React.ReactNode> = {
   insole: (
     <>
       <path d="M38 88c-10 0-14-10-12-26 2-18 4-36 16-46 10-8 24-6 30 6 6 12 2 26 0 38-2 14 0 28-12 28z" fill="var(--art)" />
@@ -99,6 +99,8 @@ const SHAPES: Record<Product['kind'], React.ReactNode> = {
 }
 
 export function ProductArt({ product }: { product: Product }) {
+  // Productos nuevos sin foto: el corredor de la marca.
+  if (!product.kind) return <img src="/icono-libre.png" alt="" className="w-1/2 max-w-24 opacity-25 dark:invert" />
   return (
     <svg viewBox="0 0 120 100" role="img" aria-label={product.name}>
       {SHAPES[product.kind]}

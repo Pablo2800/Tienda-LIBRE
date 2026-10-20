@@ -1,4 +1,4 @@
-import type { Product } from '../data/products'
+import { available, type Product } from '../data/products'
 import { Price } from './Price'
 import { ProductArt } from './ProductArt'
 import { Stock } from './Stock'
@@ -15,6 +15,7 @@ export function ProductCard({ product: p, onOpen, onAdd }: Props) {
   const mediaCount = p.media?.length ?? 0
   // Con talles hay que elegir uno antes de comprar, así que se abre el detalle.
   const needsChoice = Boolean(p.sizes?.length)
+  const soldOut = available(p) < 1
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-line bg-surface hover:border-accent">
       <button
@@ -38,8 +39,12 @@ export function ProductCard({ product: p, onOpen, onAdd }: Props) {
         <Stock product={p} />
         <div className="mt-auto flex items-center justify-between pt-2">
           <Price product={p} />
-          <button className="rounded-lg bg-accent px-3 py-2.25 font-semibold text-accent-ink" onClick={needsChoice ? onOpen : onAdd}>
-            {needsChoice ? 'Elegir talle' : 'Agregar'}
+          <button
+            className="rounded-lg bg-accent px-3 py-2.25 font-semibold text-accent-ink disabled:opacity-45"
+            onClick={needsChoice ? onOpen : onAdd}
+            disabled={soldOut}
+          >
+            {soldOut ? 'Sin stock' : needsChoice ? 'Elegir talle' : 'Agregar'}
           </button>
         </div>
       </div>

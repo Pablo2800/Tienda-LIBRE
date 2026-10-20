@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ars } from '../lib/format'
+import { AdminProducts } from './AdminProducts'
 import { BrandMark } from './BrandMark'
 
 // Panel del local en /admin: lista los pedidos guardados y permite cambiarles el estado.
@@ -72,6 +73,9 @@ export function AdminPanel() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState(0)
+  const [tab, setTab] = useState<'pedidos' | 'productos'>('pedidos')
+  // Al tocar "Actualizar" se vuelve a montar la pestaña de productos, que recarga la lista.
+  const [refresh, setRefresh] = useState(0)
 
   const load = useCallback(async (pass: string) => {
     setLoading(true)
@@ -115,6 +119,11 @@ export function AdminPanel() {
     }
   }
 
+  const onAccessError = useCallback((code: string) => {
+    setError(ERRORS[code] ?? 'No pudimos conectar con el servidor.')
+    if (code === 'unauthorized') setPassword('')
+  }, [])
+
   const visible = useMemo(() => orders?.filter((o) => FILTERS[filter].match(o.status)) ?? [], [orders, filter])
 
   return (
@@ -123,11 +132,18 @@ export function AdminPanel() {
         <div className="wrap flex items-center justify-between gap-3 py-4">
           <a href="/" className="flex items-center gap-2 font-display text-lg font-bold">
             <BrandMark />
-            Pedidos
+            Panel del local
           </a>
           {password && (
             <div className="flex gap-2">
-              <button className="btn-ghost py-2 text-sm" onClick={() => load(password)} disabled={loading}>
+              <button
+                className="btn-ghost py-2 text-sm"
+                onClick={() => {
+                  load(password)
+                  setRefresh((n) => n + 1)
+                }}
+                disabled={loading}
+              >
                 {loading ? 'Cargando…' : 'Actualizar'}
               </button>
               <button
@@ -162,7 +178,15 @@ export function AdminPanel() {
             <label className="text-[13px] font-semibold" htmlFor="admin-pass">
               Contraseña
             </label>
-            <input id="admin-pass" type="password" className={INPUT} value={draft} onChange={(e) => setDraft(e.target.value)} autoComplete="current-password" autoFocus />
+            <input
+              id="admin-pass"
+              type="password"
+              className={INPUT}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              autoComplete="current-password"
+              autoFocus
+            />
             {error && <span className="text-sm text-warn">{error}</span>}
             <button className="btn-primary" disabled={!draft || loading}>
               Entrar
@@ -171,21 +195,40 @@ export function AdminPanel() {
         ) : (
           <>
             {error && <div className="rounded-[10px] border border-warn px-3.5 py-3 text-sm text-warn">{error}</div>}
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar pedidos">
-              {FILTERS.map((f, i) => (
-                <button key={f.label} className="chip" aria-pressed={i === filter} onClick={() => setFilter(i)}>
-                  {f.label} {orders && <span className="opacity-70">({orders.filter((o) => f.match(o.status)).length})</span>}
+            <div className="flex gap-1 border-b border-line" role="tablist">
+              {(['pedidos', 'productos'] as const).map((t) => (
+                <button
+                  key={t}
+                  role="tab"
+                  aria-selected={tab === t}
+                  className="-mb-px border-b-2 border-transparent px-3 py-2 font-semibold text-muted capitalize aria-selected:border-ink aria-selected:text-ink"
+                  onClick={() => setTab(t)}
+                >
+                  {t}
                 </button>
               ))}
             </div>
-            {orders && visible.length === 0 && (
-              <div className="rounded-xl border border-dashed border-line bg-surface p-10 text-center text-muted">No hay pedidos en esta lista.</div>
+            {tab === 'productos' ? (
+              <AdminProducts key={refresh} password={password} onError={onAccessError} />
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar pedidos">
+                  {FILTERS.map((f, i) => (
+                    <button key={f.label} className="chip" aria-pressed={i === filter} onClick={() => setFilter(i)}>
+                      {f.label} {orders && <span className="opacity-70">({orders.filter((o) => f.match(o.status)).length})</span>}
+                    </button>
+                  ))}
+                </div>
+                {orders && visible.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-line bg-surface p-10 text-center text-muted">No hay pedidos en esta lista.</div>
+                )}
+                <div className="grid gap-4 md:grid-cols-2">
+                  {visible.map((o) => (
+                    <OrderCard key={o.id} order={o} onStatus={(s) => changeStatus(o.id, s)} />
+                  ))}
+                </div>
+              </>
             )}
-            <div className="grid gap-4 md:grid-cols-2">
-              {visible.map((o) => (
-                <OrderCard key={o.id} order={o} onStatus={(s) => changeStatus(o.id, s)} />
-              ))}
-            </div>
           </>
         )}
       </main>

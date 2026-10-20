@@ -1,6 +1,6 @@
-// Base de datos de pedidos (Postgres de Neon, creada desde Vercel > Storage).
+// Base de datos de pedidos y productos (Postgres de Neon, creada desde Vercel > Storage).
 // Vercel carga DATABASE_URL solo al conectar la base al proyecto.
-// Si no hay base, la tienda sigue funcionando pero los pedidos no se guardan.
+// Si no hay base, la tienda usa el catálogo de src/data/products.ts y los pedidos no se guardan.
 import { neon } from '@neondatabase/serverless'
 
 type Query = (text: string, params?: unknown[]) => Promise<Record<string, unknown>[]>
@@ -16,13 +16,14 @@ export function setQueryForTests(q: Query) {
   ready = null
 }
 
-async function db(text: string, params: unknown[] = []) {
+export async function db(text: string, params: unknown[] = []) {
   if (!query) {
     const sql = neon((process.env.DATABASE_URL || process.env.POSTGRES_URL)!)
     query = (t, p) => sql.query(t, p) as Promise<Record<string, unknown>[]>
   }
-  // La tabla se crea sola la primera vez.
-  ready ??= query(`
+  // Las tablas se crean solas la primera vez.
+  const q = query
+  ready ??= q(`
     CREATE TABLE IF NOT EXISTS orders (
       id TEXT PRIMARY KEY,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -40,9 +41,59 @@ async function db(text: string, params: unknown[] = []) {
       items JSONB NOT NULL,
       shipping INTEGER NOT NULL DEFAULT 0,
       total INTEGER NOT NULL
-    )`).then(() => undefined)
-  await ready
-  return query(text, params)
+    )`)
+    .then(() =>
+      q(`
+    CREATE TABLE IF NOT EXISTS products (
+      id TEXT PRIMARY KEY,
+      position INTEGER NOT NULL DEFAULT 0,
+      active BOOLEAN NOT NULL DEFAULT true,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT '',
+      brand TEXT NOT NULL DEFAULT '',
+      indication TEXT NOT NULL DEFAULT '',
+      detail TEXT NOT NULL DEFAULT '',
+      sizes JSONB NOT NULL DEFAULT '[]',
+      made_to_measure BOOLEAN NOT NULL DEFAULT false,
+      bulky BOOLEAN NOT NULL DEFAULT false,
+      price INTEGER NOT NULL,
+      stock INTEGER NOT NULL DEFAULT 0,
+      kind TEXT,
+      media JSONB NOT NULL DEFAULT '[]',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`),
+    )
+    .then(() => q(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY)`))
+    .then(() => undefined)
+  try {
+    await ready
+  } catch (err) {
+    // Si falló (por ejemplo, la base no respondía), se reintenta en el próximo pedido.
+    ready = null
+    throw err
+  }
+  return q(text, params)
+}
+
+// Al pasar a "pagado" se descuenta el stock de los productos del pedido (salvo los a medida).
+// Todo en una sola consulta: si el aviso de Mercado Pago llega dos veces, solo la primera
+// encuentra el pedido en "pendiente_pago", así que el stock se descuenta una sola vez.
+export async function recordPayment(orderId: string, paymentId: string, paymentStatus: string) {
+  await db(
+    `WITH paid AS (
+       UPDATE orders SET payment_id = $2, payment_status = $3, status = 'pagado'
+       WHERE id = $1 AND status = 'pendiente_pago' AND $3 = 'approved'
+       RETURNING items
+     ), sold AS (
+       SELECT split_part(i->>'key', '::', 1) AS id, SUM((i->>'quantity')::int) AS qty
+       FROM paid, jsonb_array_elements(paid.items) AS i GROUP BY 1
+     )
+     UPDATE products p SET stock = GREATEST(p.stock - sold.qty, 0), updated_at = now()
+     FROM sold WHERE p.id = sold.id AND NOT p.made_to_measure`,
+    [orderId, paymentId, paymentStatus],
+  )
+  // Si no pasó a "pagado" (rechazado, pendiente o aviso repetido), igual se guarda el último estado del pago.
+  await db(`UPDATE orders SET payment_id = $2, payment_status = $3 WHERE id = $1`, [orderId, paymentId, paymentStatus])
 }
 
 // Estados que ve el cliente en el panel, en orden.
@@ -71,17 +122,6 @@ export async function createOrder(o: NewOrder) {
     `INSERT INTO orders (id, name, phone, ship, street, zone, vehicle, quote_id, has_custom, items, shipping, total)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
     [o.id, o.name, o.phone, o.ship, o.street, o.zone, o.vehicle, o.quoteId, o.hasCustom, JSON.stringify(o.items), o.shipping, o.total],
-  )
-}
-
-// Registra el resultado del pago. Solo pasa a "pagado" si todavía estaba esperando el pago,
-// así un aviso repetido de Mercado Pago no pisa el estado que puso el local.
-export async function recordPayment(orderId: string, paymentId: string, paymentStatus: string) {
-  await db(
-    `UPDATE orders SET payment_id = $2, payment_status = $3,
-       status = CASE WHEN status = 'pendiente_pago' AND $3 = 'approved' THEN 'pagado' ELSE status END
-     WHERE id = $1`,
-    [orderId, paymentId, paymentStatus],
   )
 }
 
