@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { parseCartKey } from '../data/products'
+import { available } from '../data/products'
+import { useCatalog } from './CatalogContext'
 
 type Cart = Record<string, number>
 
@@ -7,7 +8,10 @@ interface CartValue {
   items: Cart
   count: number
   subtotal: number
-  add: (id: string) => void
+  /** Cuántas unidades más se pueden agregar de ese producto según el stock. */
+  room: (id: string) => number
+  /** Suma una unidad. Devuelve false si no queda stock. */
+  add: (id: string) => boolean
   change: (id: string, delta: number) => void
   clear: () => void
 }
@@ -15,18 +19,25 @@ interface CartValue {
 const CartContext = createContext<CartValue | null>(null)
 const KEY = 'ortopedia-cart'
 
-function load(): Cart {
+function load(parse: ReturnType<typeof useCatalog>['parse']): Cart {
   try {
     const saved: Cart = JSON.parse(localStorage.getItem(KEY) || '{}')
-    // Descarta productos que ya no están en el catálogo.
-    return Object.fromEntries(Object.entries(saved).filter(([k]) => parseCartKey(k).product))
+    // Descarta productos que ya no están en el catálogo o se quedaron sin stock.
+    return Object.fromEntries(
+      Object.entries(saved).flatMap(([k, n]) => {
+        const p = parse(k).product
+        const max = p ? available(p) : 0
+        return max > 0 ? [[k, Math.min(n, max)]] : []
+      }),
+    )
   } catch {
     return {}
   }
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<Cart>(load)
+  const { parse } = useCatalog()
+  const [items, setItems] = useState<Cart>(() => load(parse))
 
   useEffect(() => {
     try {
@@ -38,22 +49,38 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<CartValue>(() => {
     const entries = Object.entries(items)
+    // Unidades en el carrito de un producto, sumando todos sus talles.
+    const inCart = (key: string) => {
+      const id = key.split('::')[0]
+      return entries.reduce((a, [k, n]) => a + (k.split('::')[0] === id ? n : 0), 0)
+    }
+    const room = (key: string) => {
+      const p = parse(key).product
+      return p ? available(p) - inCart(key) : 0
+    }
     return {
       items,
       count: entries.reduce((a, [, n]) => a + n, 0),
-      subtotal: entries.reduce((a, [id, n]) => a + (parseCartKey(id).product?.price ?? 0) * n, 0),
-      add: (id) => setItems((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 })),
-      change: (id, delta) =>
+      subtotal: entries.reduce((a, [id, n]) => a + (parse(id).product?.price ?? 0) * n, 0),
+      room,
+      add: (id) => {
+        if (room(id) < 1) return false
+        setItems((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 }))
+        return true
+      },
+      change: (id, delta) => {
+        if (delta > 0 && room(id) < delta) return
         setItems((c) => {
           const n = (c[id] ?? 0) + delta
           const next = { ...c }
           if (n <= 0) delete next[id]
           else next[id] = n
           return next
-        }),
+        })
+      },
       clear: () => setItems({}),
     }
-  }, [items])
+  }, [items, parse])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

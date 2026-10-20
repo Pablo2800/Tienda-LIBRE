@@ -7,10 +7,11 @@
 // Si falta MP_ACCESS_TOKEN responde 503 y la tienda simula el pago.
 // Los precios se toman del catálogo y el envío se vuelve a cotizar acá: nunca se confía en lo que manda el navegador.
 import { randomBytes } from 'node:crypto'
-import { parseCartKey } from '../src/data/products.js'
+import { available, parseCartKey } from '../src/data/products.js'
 import { simulatedQuote, ZONES } from '../src/lib/shipping.js'
 import { createOrder, dbConfigured } from './_lib/db.js'
 import { createPreference, mpConfigured, type Preference } from './_lib/mercadopago.js'
+import { listProducts } from './_lib/products.js'
 import { json, uberQuote } from './_lib/uber.js'
 
 type Body = {
@@ -29,13 +30,23 @@ export async function POST(request: Request): Promise<Response> {
   const phone = body.phone?.trim().slice(0, 30)
   if (!name || !phone) return json({ error: 'missing_contact' }, 400)
 
-  // Productos: precio y stock salen del catálogo.
+  // Productos: precio y stock salen del catálogo (de la base si está conectada).
+  let catalog
+  try {
+    catalog = await listProducts()
+  } catch (err) {
+    console.error('load catalog failed', err)
+    return json({ error: 'db' }, 502)
+  }
   const items: Preference['items'] = []
+  const units = new Map<string, number>() // unidades por producto, sumando todos los talles
   let bulky = false
   let hasCustom = false
   for (const [key, qty] of Object.entries(body.items ?? {})) {
-    const { product, size } = parseCartKey(key)
-    if (!product || !Number.isInteger(qty) || qty < 1 || qty > product.stock) return json({ error: 'invalid_item', key }, 400)
+    const { product, size } = parseCartKey(key, catalog)
+    if (!product || !Number.isInteger(qty) || qty < 1) return json({ error: 'invalid_item', key }, 400)
+    units.set(product.id, (units.get(product.id) ?? 0) + qty)
+    if (units.get(product.id)! > available(product)) return json({ error: 'no_stock', key }, 400)
     if (product.sizes && !(size && product.sizes.includes(size))) return json({ error: 'invalid_size', key }, 400)
     bulky ||= Boolean(product.bulky)
     hasCustom ||= Boolean(product.madeToMeasure)
@@ -116,7 +127,7 @@ export async function POST(request: Request): Promise<Response> {
       back_urls: { success: back, failure: back, pending: back },
       ...(isPublic && { auto_return: 'approved', notification_url: `${origin}/api/mp-webhook` }),
       payer: { name, phone: { number: phone } },
-      statement_descriptor: 'ORTOPEDIA',
+      statement_descriptor: 'LIBRE',
     })
     return json({ orderId, url: pref.init_point })
   } catch (err) {

@@ -1,10 +1,11 @@
 import { useCart } from '../context/CartContext'
-import { parseCartKey } from '../data/products'
+import { useCatalog } from '../context/CatalogContext'
 import { ars } from '../lib/format'
 import { ProductArt } from './ProductArt'
 
 export function CartDrawer({ onClose, onCheckout }: { onClose: () => void; onCheckout: () => void }) {
-  const { items, subtotal, change } = useCart()
+  const { items, subtotal, change, room } = useCart()
+  const { parse } = useCatalog()
   const ids = Object.keys(items)
   return (
     <>
@@ -24,7 +25,7 @@ export function CartDrawer({ onClose, onCheckout }: { onClose: () => void; onChe
         <div className="flex flex-1 flex-col overflow-auto px-[18px] py-2">
           {ids.length === 0 && <p className="hint py-6">Tu carrito está vacío. Agregá productos desde el catálogo.</p>}
           {ids.map((id) => {
-            const { product: p, size } = parseCartKey(id)
+            const { product: p, size } = parse(id)
             if (!p) return null
             return (
               <div className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-3 border-b border-line py-3" key={id}>
@@ -39,7 +40,7 @@ export function CartDrawer({ onClose, onCheckout }: { onClose: () => void; onChe
                       −
                     </button>
                     <span className="min-w-[22px] text-center tabular-nums">{items[id]}</span>
-                    <button className="size-7" onClick={() => change(id, 1)} aria-label="Sumar uno">
+                    <button className="size-7 disabled:opacity-35" onClick={() => change(id, 1)} disabled={room(id) < 1} aria-label="Sumar uno">
                       +
                     </button>
                   </div>

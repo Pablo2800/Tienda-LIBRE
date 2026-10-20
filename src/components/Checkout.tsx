@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useCart } from '../context/CartContext'
-import { parseCartKey } from '../data/products'
+import { useCatalog } from '../context/CatalogContext'
 import { ars } from '../lib/format'
 import { quoteDelivery, STORE_ADDRESS, ZONES, type Quote } from '../lib/shipping'
 import { BrandMark } from './BrandMark'
@@ -17,6 +17,7 @@ const LABEL = 'text-[13px] font-semibold'
 
 export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish: () => void }) {
   const { items, subtotal } = useCart()
+  const { parse } = useCatalog()
   const [step, setStep] = useState(1)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -28,7 +29,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
   const [paying, setPaying] = useState(false)
   const [payError, setPayError] = useState('')
   const [orderId, setOrderId] = useState('')
-  const lines = Object.entries(items).map(([key, n]) => ({ key, n, ...parseCartKey(key) }))
+  const lines = Object.entries(items).map(([key, n]) => ({ key, n, ...parse(key) }))
   const vehicle = lines.some((l) => l.product?.bulky) ? 'auto' : 'moto'
   const hasCustom = lines.some((l) => l.product?.madeToMeasure)
 
@@ -76,7 +77,13 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
           window.location.href = data.url
           return
         }
-        setPayError(data.error === 'no_coverage' ? 'No hay cobertura de envío para esa dirección.' : 'No pudimos iniciar el pago. Probá de nuevo en unos minutos.')
+        setPayError(
+          data.error === 'no_coverage'
+            ? 'No hay cobertura de envío para esa dirección.'
+            : data.error === 'no_stock' || data.error === 'invalid_item'
+              ? 'Uno de los productos ya no tiene stock suficiente. Recargá la página y revisá tu carrito.'
+              : 'No pudimos iniciar el pago. Probá de nuevo en unos minutos.',
+        )
         setPaying(false)
         return
       }

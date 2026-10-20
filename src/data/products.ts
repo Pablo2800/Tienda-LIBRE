@@ -12,8 +12,8 @@ export type ProductKind =
   | 'knee'
   | 'collar'
 
-// Fotos y videos del producto. Los archivos van en public/productos/<id>/.
-// Si un producto no tiene media, se muestra la ilustración genérica.
+// Fotos y videos del producto. Las fotos que se suben desde /admin quedan en Vercel Blob;
+// las de este archivo, en public/productos/<id>/. Sin media se muestra una ilustración.
 export type Media =
   | { type: 'image'; src: string; alt?: string }
   | { type: 'video'; src: string; poster?: string }
@@ -34,18 +34,21 @@ export interface Product {
   /** No entra en una moto: el envío se cotiza en auto. */
   bulky?: boolean
   price: number
+  /** Unidades disponibles. Los productos a medida no usan stock. */
   stock: number
-  kind: ProductKind
+  /** Ilustración de reemplazo de los productos de ejemplo. Los productos nuevos no la tienen. */
+  kind?: ProductKind
   media?: Media[]
 }
 
-// Catálogo de ejemplo para la demo. Más adelante viene de la base de datos.
-export const PRODUCTS: Product[] = [
+// Catálogo inicial: con la base conectada se copia ahí una sola vez y desde entonces
+// se edita en /admin. Sin base (por ejemplo en local) la tienda usa esta lista.
+export const SEED_PRODUCTS: Product[] = [
   {
     id: 'plantillas-a-medida', category: 'Plantillas', name: 'Plantillas termomoldeadas personalizadas', brand: 'Taller propio',
     indication: 'Pie plano, pie cavo, fascitis plantar, espolón calcáneo y dolor al caminar',
     detail: 'EVA de alta densidad con forro antibacterial, moldeadas sobre tu pisada',
-    madeToMeasure: true, price: 100, stock: 99, kind: 'insole',
+    madeToMeasure: true, price: 48500, stock: 99, kind: 'insole',
     media: [
       { type: 'image', src: '/productos/plantillas-a-medida/vista-superior.svg', alt: 'Vista superior de la plantilla' },
       { type: 'image', src: '/productos/plantillas-a-medida/vista-lateral.svg', alt: 'Vista lateral con el arco' },
@@ -124,13 +127,12 @@ export const PRODUCTS: Product[] = [
   },
 ]
 
-export const CATEGORIES = ['Todos', ...new Set(PRODUCTS.map((p) => p.category))]
-
-export const findProduct = (id: string) => PRODUCTS.find((p) => p.id === id)
-
 // En el carrito cada línea se identifica por producto y talle: "faja-lumbar::L".
 export const cartKey = (id: string, size?: string) => (size ? `${id}::${size}` : id)
-export function parseCartKey(key: string) {
+export function parseCartKey(key: string, products: Product[]) {
   const [id, size] = key.split('::')
-  return { product: findProduct(id), size }
+  return { product: products.find((p) => p.id === id), size }
 }
+
+/** Unidades que se pueden comprar: los productos a medida no tienen límite de stock. */
+export const available = (p: Product) => (p.madeToMeasure ? 99 : p.stock)

@@ -1,24 +1,7 @@
 // Pedidos para el panel del local (/admin). Pide la contraseña de ADMIN_PASSWORD.
-//
-// Variables de entorno:
-//   ADMIN_PASSWORD → la contraseña del panel. Sin ella, el panel queda deshabilitado.
-//   DATABASE_URL   → la carga Vercel al conectar la base de Neon (Storage).
-import { createHash, timingSafeEqual } from 'node:crypto'
-import { dbConfigured, listOrders, ORDER_STATUSES, setOrderStatus, type OrderStatus } from './_lib/db.js'
+import { guard } from './_lib/admin.js'
+import { listOrders, ORDER_STATUSES, setOrderStatus, type OrderStatus } from './_lib/db.js'
 import { json } from './_lib/uber.js'
-
-const digest = (s: string) => createHash('sha256').update(s).digest()
-
-// Devuelve una respuesta de error, o null si la contraseña es correcta.
-function guard(request: Request): Response | null {
-  const password = process.env.ADMIN_PASSWORD
-  if (!password) return json({ error: 'admin_not_configured' }, 503)
-  if (!dbConfigured()) return json({ error: 'db_not_configured' }, 503)
-  const given = (request.headers.get('authorization') ?? '').replace(/^Bearer /, '')
-  // Se comparan los hashes para que el tiempo de respuesta no revele la contraseña.
-  if (!timingSafeEqual(digest(given), digest(password))) return json({ error: 'unauthorized' }, 401)
-  return null
-}
 
 export async function GET(request: Request): Promise<Response> {
   const denied = guard(request)

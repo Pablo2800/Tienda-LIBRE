@@ -6,7 +6,8 @@ import { PaymentReturn } from './components/PaymentReturn'
 import { ProductCard } from './components/ProductCard'
 import { ProductModal } from './components/ProductModal'
 import { CartProvider, useCart } from './context/CartContext'
-import { CATEGORIES, PRODUCTS, cartKey, findProduct } from './data/products'
+import { CatalogProvider, useCatalog } from './context/CatalogContext'
+import { cartKey } from './data/products'
 import { STORE_ADDRESS } from './lib/shipping'
 
 // Beneficios que se muestran arriba a la derecha: [color del punto, título, texto].
@@ -35,6 +36,7 @@ function initialView(): View {
 
 function Store() {
   const cart = useCart()
+  const catalog = useCatalog()
   const [category, setCategory] = useState('Todos')
   const [query, setQuery] = useState('')
   const [view, setView] = useState<View>(initialView)
@@ -42,10 +44,10 @@ function Store() {
 
   const products = useMemo(() => {
     const t = query.trim().toLowerCase()
-    return PRODUCTS.filter(
+    return catalog.products.filter(
       (p) => (category === 'Todos' || p.category === category) && (!t || [p.name, p.indication, p.detail, p.category, p.brand].join(' ').toLowerCase().includes(t)),
     )
-  }, [category, query])
+  }, [catalog, category, query])
 
   useEffect(() => {
     document.body.style.overflow = view.kind === 'none' ? '' : 'hidden'
@@ -61,11 +63,12 @@ function Store() {
   }, [toast])
 
   const add = (id: string) => {
-    cart.add(id)
-    setToast('Agregado al carrito')
+    const added = cart.add(id)
+    setToast(added ? 'Agregado al carrito' : 'No hay más stock de este producto')
+    return added
   }
   const close = () => setView({ kind: 'none' })
-  const openProduct = view.kind === 'product' ? findProduct(view.id) : undefined
+  const openProduct = view.kind === 'product' ? catalog.find(view.id) : undefined
 
   return (
     <>
@@ -95,7 +98,7 @@ function Store() {
         </section>
 
         <div className="flex flex-wrap items-center gap-2 pt-5 pb-3" role="group" aria-label="Categorías">
-          {CATEGORIES.map((c) => (
+          {catalog.categories.map((c) => (
             <button key={c} className="chip" aria-pressed={c === category} onClick={() => setCategory(c)}>
               {c}
             </button>
@@ -129,8 +132,7 @@ function Store() {
           product={openProduct}
           onClose={close}
           onAdd={(size) => {
-            add(cartKey(openProduct.id, size))
-            setView({ kind: 'cart' })
+            if (add(cartKey(openProduct.id, size))) setView({ kind: 'cart' })
           }}
         />
       )}
@@ -157,8 +159,10 @@ function Store() {
 
 export default function App() {
   return (
-    <CartProvider>
-      <Store />
-    </CartProvider>
+    <CatalogProvider>
+      <CartProvider>
+        <Store />
+      </CartProvider>
+    </CatalogProvider>
   )
 }
