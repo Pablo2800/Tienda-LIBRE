@@ -5,10 +5,11 @@ import { Header } from './components/Header'
 import { PaymentReturn } from './components/PaymentReturn'
 import { ProductCard } from './components/ProductCard'
 import { ProductModal } from './components/ProductModal'
+import { Revocation } from './components/Revocation'
 import { CartProvider, useCart } from './context/CartContext'
 import { CatalogProvider, useCatalog } from './context/CatalogContext'
 import { cartKey } from './data/products'
-import { STORE_ADDRESS } from './lib/shipping'
+import { STORE, whatsappLink } from './data/store'
 
 // Beneficios que se muestran arriba a la derecha: [color del punto, título, texto].
 // Los puntos tienen color propio (verde, naranja, celeste) aunque la marca sea blanco y negro.
@@ -23,6 +24,7 @@ type View =
   | { kind: 'product'; id: string }
   | { kind: 'cart' }
   | { kind: 'checkout' }
+  | { kind: 'arrepentimiento' }
   | { kind: 'return'; orderId: string; paymentId: string | null }
 
 // Al volver de Mercado Pago la URL trae ?pedido=...&payment_id=...
@@ -123,8 +125,22 @@ function Store() {
 
       <footer className="border-t border-line bg-surface text-[13px] text-muted">
         <div className="wrap flex flex-wrap justify-between gap-3 py-5">
-          <span>LIBRE Salud Deportiva · {STORE_ADDRESS} (dirección de ejemplo)</span>
+          <span>
+            {STORE.name} · {STORE.address}
+            {STORE.whatsapp && (
+              <>
+                {' · '}
+                <a className="underline" href={whatsappLink('Hola, tengo una consulta.')} target="_blank" rel="noreferrer">
+                  WhatsApp
+                </a>
+              </>
+            )}
+          </span>
           <span>Precios en pesos argentinos, IVA incluido</span>
+          {/* Obligatorio para tiendas online (Resolución 424/2020): visible y de fácil acceso. */}
+          <button className="basis-full text-left font-semibold text-ink underline" onClick={() => setView({ kind: 'arrepentimiento' })}>
+            Botón de arrepentimiento
+          </button>
         </div>
       </footer>
 
@@ -137,6 +153,7 @@ function Store() {
           }}
         />
       )}
+      {view.kind === 'arrepentimiento' && <Revocation onClose={close} />}
       {view.kind === 'cart' && <CartDrawer onClose={close} onCheckout={() => setView({ kind: 'checkout' })} />}
       {view.kind === 'checkout' && (
         <Checkout
