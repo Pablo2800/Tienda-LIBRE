@@ -11,10 +11,11 @@ import { cartKey } from './data/products'
 import { STORE_ADDRESS } from './lib/shipping'
 
 // Beneficios que se muestran arriba a la derecha: [color del punto, título, texto].
+// Los puntos tienen color propio (verde, naranja, celeste) aunque la marca sea blanco y negro.
 const PERKS: [string, string, string][] = [
-  ['bg-accent', 'Envío en el día', 'en moto, o en auto si es voluminoso'],
-  ['bg-warm', 'A medida:', 'plantillas, férulas y ortesis hechas en nuestro taller'],
-  ['bg-[var(--art-soft)]', 'Mercado Pago', 'con tarjeta, débito o dinero en cuenta'],
+  ['bg-[#1f9d7a] dark:bg-[#4cc2ae]', 'Envío en el día', 'en moto, o en auto si es voluminoso'],
+  ['bg-[#e8955a] dark:bg-[#f0a873]', 'A medida:', 'plantillas, férulas y ortesis hechas en nuestro taller'],
+  ['bg-mercadopago', 'Mercado Pago', 'con tarjeta, débito o dinero en cuenta'],
 ]
 
 type View =
