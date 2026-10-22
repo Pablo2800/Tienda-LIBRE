@@ -116,3 +116,26 @@ no vuelve solo: hay que corregirlo a mano en el producto.
 
 Sin base de datos la tienda usa el catálogo de `src/data/products.ts` y sigue cobrando, pero los
 pedidos solo quedan en Mercado Pago.
+
+## Datos del local
+
+Nombre, dirección, horario y WhatsApp del local están en `src/data/store.ts`. Si `whatsapp` tiene un número
+(con código de país, por ejemplo `5492615550123`), aparece el botón "Escribinos por WhatsApp" en la
+confirmación del pedido y un link en el pie.
+
+## Aviso de ventas por mail
+
+Cuando un pago queda aprobado, le llega un mail al local con el pedido: cliente, teléfono, entrega,
+productos y total. Usa [Resend](https://resend.com), que tiene un plan gratis de 3.000 mails por mes.
+
+1. Crear una cuenta en Resend con el mail del local y generar una API Key.
+2. En Vercel, cargar `RESEND_API_KEY` y `NOTIFY_EMAIL` (el mail de esa cuenta) y volver a desplegar.
+3. Con dominio propio: verificarlo en Resend y cargar `MAIL_FROM`, así se puede mandar a cualquier mail.
+
+Sin esas variables no se manda nada y la tienda funciona igual.
+
+## Botón de arrepentimiento
+
+Es obligatorio para tiendas online en Argentina (Resolución 424/2020). Está en el pie de la tienda: el
+cliente completa el formulario y recibe en el momento un código de revocación. El pedido queda en
+`/admin` > Pedidos ("Pedidos de arrepentimiento") y, si el mail está configurado, le llega un aviso al local.

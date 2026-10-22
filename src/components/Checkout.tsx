@@ -4,11 +4,11 @@ import { useCatalog } from '../context/CatalogContext'
 import { ars } from '../lib/format'
 import { quoteDelivery, STORE_ADDRESS, ZONES, type Quote } from '../lib/shipping'
 import { BrandMark } from './BrandMark'
-import { OrderTracking } from './OrderTracking'
+import { OrderConfirmation } from './OrderConfirmation'
 import { savePendingOrder } from '../lib/pendingOrder'
 
 type Ship = '' | 'moto' | 'retiro'
-const STEPS = ['Datos y envío', 'Pago', 'Seguimiento']
+const STEPS = ['Datos y envío', 'Pago', 'Confirmación']
 const OPTION =
   'grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[10px] border border-line px-3.5 py-3 has-checked:border-accent has-checked:bg-accent-soft'
 const INPUT = 'w-full rounded-lg border border-line bg-bg px-3 py-2.5'
@@ -133,7 +133,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
                   <div className="flex min-w-0 flex-col gap-[5px]">
                     <label className={LABEL} htmlFor="f-phone">Teléfono</label>
                     <input className={INPUT} id="f-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="261 555 0123" inputMode="tel" />
-                    <span className="hint">El repartidor te llama a este número.</span>
+                    <span className="hint">Te escribimos a este número por WhatsApp para coordinar la entrega.</span>
                   </div>
                   <div className="flex min-w-0 flex-col gap-[5px] md:col-span-2">
                     <label className={LABEL} htmlFor="f-street">Calle y número</label>
@@ -197,10 +197,10 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
           )}
 
           {step === 3 && (
-            <OrderTracking
+            <OrderConfirmation
               orderId={orderId}
               customerName={name}
-              delivery={ship === 'moto' ? { street, zone, vehicle } : null}
+              delivery={ship === 'moto' ? { street, zone } : null}
               hasCustom={hasCustom}
               onFinish={onFinish}
             />

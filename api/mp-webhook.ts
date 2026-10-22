@@ -7,6 +7,7 @@
 // Actualiza el pedido en la base. Próximo paso: cuando el pago queda aprobado y el pedido
 // es con envío, crear el envío en Uber Direct con el quote_id guardado.
 import { dbConfigured, recordPayment } from './_lib/db.js'
+import { notifySale } from './_lib/mail.js'
 import { getPayment, mpConfigured, validSignature } from './_lib/mercadopago.js'
 import { json } from './_lib/uber.js'
 
@@ -24,7 +25,11 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const payment = await getPayment(dataId)
     console.log('mercadopago payment', { id: payment.id, status: payment.status, order: payment.external_reference })
-    if (payment.external_reference && dbConfigured()) await recordPayment(payment.external_reference, String(payment.id), payment.status)
+    if (payment.external_reference && dbConfigured()) {
+      const paid = await recordPayment(payment.external_reference, String(payment.id), payment.status)
+      // Si el mail falla no se reintenta el webhook: el pago ya quedó registrado.
+      if (paid) await notifySale(paid, process.env.SITE_URL || url.origin).catch((err) => console.error('sale mail failed', err))
+    }
     return json({ received: true })
   } catch (err) {
     console.error('mercadopago webhook failed', err)
