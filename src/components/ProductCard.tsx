@@ -32,7 +32,8 @@ export function ProductCard({ product: p, onOpen, onAdd }: Props) {
       </button>
       <div className="flex flex-1 flex-col gap-1 px-3.5 pt-3 pb-3.5">
         <span className="eyebrow">
-          {p.category} · {p.brand}
+          {p.category}
+          {p.brand && ` · ${p.brand}`}
         </span>
         <span className="leading-tight font-semibold">{p.name}</span>
         <span className="line-clamp-2 text-[13px] text-muted">{p.indication}</span>

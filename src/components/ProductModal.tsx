@@ -41,7 +41,8 @@ export function ProductModal({ product: p, onClose, onAdd }: Props) {
           <MediaCarousel product={p} />
           <div className="flex min-w-0 flex-col gap-2.5 p-6">
             <span className="eyebrow">
-              {p.category} · {p.brand}
+              {p.category}
+              {p.brand && ` · ${p.brand}`}
             </span>
             <h2 className="font-display text-[26px] leading-[1.1] font-bold text-balance">{p.name}</h2>
             <Price product={p} className="text-[28px]" />
