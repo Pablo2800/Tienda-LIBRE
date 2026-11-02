@@ -2,10 +2,10 @@
 export const STORE = {
   name: 'LIBRE Salud Deportiva',
   /** Dirección del local, para retiro y el pie de página. */
-  address: 'Av. San Martín 1200, Ciudad de Mendoza',
+  address: 'Sarmiento 2445, Godoy Cruz, Mendoza',
   hours: 'lun a sáb 9 a 19 h',
   /** WhatsApp del local con código de país, sin + ni espacios (ej. 5492615550123). Vacío: no se muestra el botón. */
-  whatsapp: '',
+  whatsapp: '5492614667053',
 }
 
 /** Link para escribirle al local por WhatsApp con un mensaje ya cargado. */
