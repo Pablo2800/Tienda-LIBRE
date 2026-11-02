@@ -19,11 +19,11 @@ export function ProductCard({ product: p, onOpen, onAdd }: Props) {
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-line bg-surface hover:border-accent">
       <button
-        className="relative grid aspect-4/3 h-96 w-full place-items-center overflow-hidden border-b border-line bg-bg [&>svg]:w-[70%]"
+        className="relative grid aspect-square w-full place-items-center overflow-hidden border-b border-line bg-white [&>svg]:w-[70%]"
         onClick={onOpen}
         aria-label={`Ver ${p.name}`}
       >
-        {cover ? <img className="size-full object-cover" src={cover} alt="" /> : <ProductArt product={p} />}
+        {cover ? <img className="size-full object-contain p-3" src={cover} alt="" /> : <ProductArt product={p} />}
         {mediaCount > 1 && (
           <span className="absolute bottom-2 left-2 rounded-full border border-line bg-surface px-2 py-0.5 text-[11.5px] font-semibold text-ink">
             {mediaCount} fotos y videos
