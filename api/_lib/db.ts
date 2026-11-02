@@ -64,6 +64,7 @@ export async function db(text: string, params: unknown[] = []) {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`),
     )
+    .then(() => q(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION, ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION`))
     .then(() => q(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY)`))
     .then(() =>
       q(`
@@ -134,7 +135,8 @@ export type NewOrder = {
   street: string
   zone: string
   vehicle: 'moto' | 'auto'
-  quoteId: string
+  /** Punto de entrega usado para cotizar (el pin del cliente o la calle encontrada). */
+  point: { lat: number; lng: number } | null
   hasCustom: boolean
   items: OrderItem[]
   shipping: number
@@ -143,9 +145,23 @@ export type NewOrder = {
 
 export async function createOrder(o: NewOrder) {
   await db(
-    `INSERT INTO orders (id, name, phone, ship, street, zone, vehicle, quote_id, has_custom, items, shipping, total)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-    [o.id, o.name, o.phone, o.ship, o.street, o.zone, o.vehicle, o.quoteId, o.hasCustom, JSON.stringify(o.items), o.shipping, o.total],
+    `INSERT INTO orders (id, name, phone, ship, street, zone, vehicle, lat, lng, has_custom, items, shipping, total)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+    [
+      o.id,
+      o.name,
+      o.phone,
+      o.ship,
+      o.street,
+      o.zone,
+      o.vehicle,
+      o.point?.lat ?? null,
+      o.point?.lng ?? null,
+      o.hasCustom,
+      JSON.stringify(o.items),
+      o.shipping,
+      o.total,
+    ],
   )
 }
 

@@ -20,6 +20,9 @@ export const ZONES: { name: string; zip: string; center: Point }[] = [
   { name: 'Lavalle', zip: '5533', center: { lat: -32.723, lng: -68.592 } },
 ]
 
+/** Link de Google Maps al punto de entrega, para el repartidor. */
+export const mapLink = (p: Point) => `https://www.google.com/maps?q=${p.lat.toFixed(6)},${p.lng.toFixed(6)}`
+
 // Las calles no van en línea recta: el recorrido real es en promedio un 30% más largo.
 const ROAD_FACTOR = 1.3
 
@@ -32,24 +35,29 @@ export function roadKm(a: Point, b: Point): number {
   return 2 * 6371 * Math.asin(Math.sqrt(h)) * ROAD_FACTOR
 }
 
-export type Quote = { ok: true; fee: number; etaMinutes: number; km: number; vehicle: Vehicle; approx: boolean } | { ok: false }
+// to es el punto de entrega usado para el cálculo, para mostrarlo en el mapa.
+export type Quote = { ok: true; fee: number; etaMinutes: number; km: number; vehicle: Vehicle; approx: boolean; to: Point } | { ok: false }
 
-/** Precio para una distancia. approx indica que se usó el centro del departamento y no la calle. */
-export function priceForKm(km: number, vehicle: Vehicle, approx = false): Quote {
+// Recuadro de Gran Mendoza: un punto fuera de acá es de otra ciudad (o un pin movido muy lejos).
+export const inMendoza = (p: Point) => p.lat > -33.25 && p.lat < -32.6 && p.lng > -69.1 && p.lng < -68.45
+
+/** Precio para una distancia. approx indica que se usó el centro del departamento y no la dirección. */
+export function priceForKm(km: number, vehicle: Vehicle, to: Point, approx = false): Quote {
   const { maxKm, ...rates } = STORE.shipping
   if (km > maxKm) return { ok: false }
   const { base, perKm } = rates[vehicle]
   // Un mínimo de 1 km, para que dentro de la misma cuadra no cobre solo la base.
   const fee = Math.round((base + Math.max(km, 1) * perKm) / 50) * 50
-  return { ok: true, fee, km, vehicle, approx, etaMinutes: Math.round(20 + km * 3) }
+  return { ok: true, fee, km, vehicle, approx, to, etaMinutes: Math.round(20 + km * 3) }
 }
 
-export async function quoteDelivery(street: string, zone: string, vehicle: Vehicle): Promise<Quote> {
+/** point: el lugar exacto que eligió el cliente (sugerencia o pin en el mapa). Sin point, el servidor busca la calle. */
+export async function quoteDelivery(street: string, zone: string, vehicle: Vehicle, point: Point | null): Promise<Quote> {
   try {
     const res = await fetch('/api/quote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ street, zone, vehicle }),
+      body: JSON.stringify({ street, zone, vehicle, point }),
     })
     if (res.headers.get('content-type')?.includes('application/json')) return (await res.json()) as Quote
   } catch {
@@ -57,5 +65,6 @@ export async function quoteDelivery(street: string, zone: string, vehicle: Vehic
   }
   const z = ZONES.find((x) => x.name === zone)
   if (!z || !STORE.location) return { ok: false }
-  return priceForKm(roadKm(STORE.location, z.center), vehicle, true)
+  const to = point ?? z.center
+  return priceForKm(roadKm(STORE.location, to), vehicle, to, !point)
 }

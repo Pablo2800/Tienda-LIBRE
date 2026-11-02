@@ -1,10 +1,11 @@
 // Sugerencias de direcciones mientras el cliente escribe, con Photon (buscador gratuito de OpenStreetMap
 // pensado para autocompletar). Se consulta desde el navegador y solo dentro de Gran Mendoza.
-import { ZONES } from './shipping'
+import { ZONES, type Point } from './shipping'
 
-export type AddressSuggestion = { street: string; zone: string; detail: string }
+export type AddressSuggestion = { street: string; zone: string; detail: string; point: Point | null }
 
 type Feature = {
+  geometry: { coordinates: [number, number] }
   properties: { name?: string; street?: string; housenumber?: string; city?: string; county?: string; district?: string; locality?: string }
 }
 
@@ -42,7 +43,7 @@ export async function searchAddress(query: string, signal?: AbortSignal): Promis
   const typedNumber = query.match(/\b\d{1,5}\b/)?.[0]
   const seen = new Set<string>()
   const out: AddressSuggestion[] = []
-  for (const { properties: p } of data.features ?? []) {
+  for (const { properties: p, geometry } of data.features ?? []) {
     const streetName = p.street ?? p.name
     if (!streetName) continue
     const number = p.housenumber ?? typedNumber
@@ -51,7 +52,10 @@ export async function searchAddress(query: string, signal?: AbortSignal): Promis
     const key = `${street}|${zone}`
     if (seen.has(key)) continue
     seen.add(key)
-    out.push({ street, zone, detail: [zone || p.city, 'Mendoza'].filter(Boolean).join(', ') })
+    const [lng, lat] = geometry.coordinates
+    // Solo con altura el punto es la casa; si es la calle entera, el servidor ubica el número.
+    const point = p.housenumber ? { lat, lng } : null
+    out.push({ street, zone, detail: [zone || p.city, 'Mendoza'].filter(Boolean).join(', '), point })
   }
   return out
 }

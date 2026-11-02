@@ -1,10 +1,7 @@
 // Ubica direcciones de Gran Mendoza en el mapa y calcula el precio del envío.
 // Primero prueba el servicio de direcciones del Estado (Georef, gratis y sin clave) y después OpenStreetMap.
 import { STORE } from '../../src/data/store.js'
-import { priceForKm, roadKm, ZONES, type Point, type Quote, type Vehicle } from '../../src/lib/shipping.js'
-
-// Recuadro de Gran Mendoza: un resultado fuera de acá es de otra ciudad con una calle del mismo nombre.
-const inMendoza = (p: Point) => p.lat > -33.25 && p.lat < -32.6 && p.lng > -69.1 && p.lng < -68.45
+import { inMendoza, priceForKm, roadKm, ZONES, type Point, type Quote, type Vehicle } from '../../src/lib/shipping.js'
 
 const TIMEOUT = 4000
 
@@ -47,18 +44,33 @@ export async function geocode(street: string, zone: string): Promise<Point | nul
 let storePoint: Promise<Point | null> | null = null
 function storeLocation(): Promise<Point | null> {
   if (STORE.location) return Promise.resolve(STORE.location)
-  storePoint ??= geocode(STORE.address, '').then((p) => {
+  // "Sarmiento 2445, Godoy Cruz, Mendoza": se separa la calle y se busca dentro de su departamento,
+  // porque hay calles con el mismo nombre en varios departamentos.
+  const street = STORE.address.split(',')[0].trim()
+  const zone = ZONES.find((z) => STORE.address.toLowerCase().includes(z.name.toLowerCase()))?.name ?? ''
+  storePoint ??= geocode(street, zone).then((p) => {
     if (!p) storePoint = null // se reintenta en la próxima cotización
     return p
   })
   return storePoint
 }
 
-/** Cotiza el envío del local a la dirección. Si no ubica la calle, usa el centro del departamento. */
-export async function quoteShipping(street: string, zoneName: string, vehicle: Vehicle): Promise<Quote> {
+/**
+ * Cotiza el envío del local a la dirección. Si el cliente marcó el punto exacto (sugerencia o pin) se usa ese;
+ * si no, se busca la calle, y si tampoco aparece, se usa el centro del departamento.
+ */
+export async function quoteShipping(street: string, zoneName: string, vehicle: Vehicle, point?: Point | null): Promise<Quote> {
   const zone = ZONES.find((z) => z.name === zoneName)
   if (!zone) return { ok: false }
-  const [from, to] = await Promise.all([storeLocation(), geocode(street, zone.name)])
+  const picked = point && inMendoza(point) ? point : null
+  const [from, found] = await Promise.all([storeLocation(), picked ?? geocode(street, zone.name)])
   if (!from) return { ok: false }
-  return priceForKm(roadKm(from, to ?? zone.center), vehicle, !to)
+  const to = found ?? zone.center
+  return priceForKm(roadKm(from, to), vehicle, to, !found)
+}
+
+/** Lee un punto que manda el navegador: dos números válidos o nada. */
+export function parsePoint(v: unknown): Point | null {
+  const p = v as Partial<Point> | null
+  return p && Number.isFinite(p.lat) && Number.isFinite(p.lng) ? { lat: Number(p.lat), lng: Number(p.lng) } : null
 }
