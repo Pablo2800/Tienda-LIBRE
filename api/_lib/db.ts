@@ -65,6 +65,7 @@ export async function db(text: string, params: unknown[] = []) {
     )`),
     )
     .then(() => q(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION, ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION`))
+    .then(() => q(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS mp_order_id TEXT`))
     .then(() => q(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY)`))
     .then(() =>
       q(`
@@ -92,7 +93,7 @@ export async function db(text: string, params: unknown[] = []) {
 // Todo en una sola consulta: si el aviso de Mercado Pago llega dos veces, solo la primera
 // encuentra el pedido en "pendiente_pago", así que el stock se descuenta una sola vez.
 // Devuelve el pedido solo si recién pasó a "pagado", para mandar el aviso de venta una sola vez.
-export async function recordPayment(orderId: string, paymentId: string, paymentStatus: string): Promise<PaidOrder | null> {
+export async function recordPayment(orderId: string, mpOrderId: string, paymentStatus: string): Promise<PaidOrder | null> {
   const [paid] = await db(
     `WITH paid AS (
        UPDATE orders SET payment_id = $2, payment_status = $3, status = 'pagado'
@@ -106,10 +107,10 @@ export async function recordPayment(orderId: string, paymentId: string, paymentS
        FROM sold WHERE p.id = sold.id AND NOT p.made_to_measure
      )
      SELECT * FROM paid`,
-    [orderId, paymentId, paymentStatus],
+    [orderId, mpOrderId, paymentStatus],
   )
   // Si no pasó a "pagado" (rechazado, pendiente o aviso repetido), igual se guarda el último estado del pago.
-  await db(`UPDATE orders SET payment_id = $2, payment_status = $3 WHERE id = $1`, [orderId, paymentId, paymentStatus])
+  await db(`UPDATE orders SET payment_id = $2, payment_status = $3 WHERE id = $1`, [orderId, mpOrderId, paymentStatus])
   return (paid as PaidOrder | undefined) ?? null
 }
 
@@ -129,6 +130,8 @@ export type OrderItem = { key: string; title: string; quantity: number; unit_pri
 
 export type NewOrder = {
   id: string
+  /** Orden de Mercado Pago (API de Orders) creada para cobrar este pedido. */
+  mpOrderId: string
   name: string
   phone: string
   ship: 'moto' | 'retiro'
@@ -145,8 +148,8 @@ export type NewOrder = {
 
 export async function createOrder(o: NewOrder) {
   await db(
-    `INSERT INTO orders (id, name, phone, ship, street, zone, vehicle, lat, lng, has_custom, items, shipping, total)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+    `INSERT INTO orders (id, name, phone, ship, street, zone, vehicle, lat, lng, has_custom, items, shipping, total, mp_order_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
     [
       o.id,
       o.name,
@@ -161,8 +164,14 @@ export async function createOrder(o: NewOrder) {
       JSON.stringify(o.items),
       o.shipping,
       o.total,
+      o.mpOrderId,
     ],
   )
+}
+
+export async function getMpOrderId(orderId: string): Promise<string | null> {
+  const [row] = await db(`SELECT mp_order_id FROM orders WHERE id = $1`, [orderId])
+  return (row?.mp_order_id as string | null | undefined) ?? null
 }
 
 export const listOrders = (limit = 200) => db(`SELECT * FROM orders ORDER BY created_at DESC LIMIT $1`, [limit])

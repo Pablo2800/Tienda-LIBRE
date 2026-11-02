@@ -25,16 +25,16 @@ type View =
   | { kind: 'cart' }
   | { kind: 'checkout' }
   | { kind: 'arrepentimiento' }
-  | { kind: 'return'; orderId: string; paymentId: string | null }
+  | { kind: 'return'; orderId: string; mpOrderId: string | null }
 
-// Al volver de Mercado Pago la URL trae ?pedido=...&payment_id=...
+// Al volver de Mercado Pago la URL trae ?pedido=... (y a veces order_id, el número de orden de Mercado Pago)
 function initialView(): View {
   const params = new URLSearchParams(window.location.search)
   const orderId = params.get('pedido')
   if (!orderId) return { kind: 'none' }
   window.history.replaceState(null, '', window.location.pathname)
-  const paymentId = params.get('payment_id')
-  return { kind: 'return', orderId, paymentId: paymentId && paymentId !== 'null' ? paymentId : null }
+  const mpOrderId = params.get('order_id')
+  return { kind: 'return', orderId, mpOrderId: mpOrderId && mpOrderId !== 'null' ? mpOrderId : null }
 }
 
 function Store() {
@@ -165,7 +165,7 @@ function Store() {
           }}
         />
       )}
-      {view.kind === 'return' && <PaymentReturn orderId={view.orderId} paymentId={view.paymentId} onApproved={cart.clear} onClose={close} />}
+      {view.kind === 'return' && <PaymentReturn orderId={view.orderId} mpOrderId={view.mpOrderId} onApproved={cart.clear} onClose={close} />}
       {toast && (
         <div className="fixed bottom-[calc(20px+env(safe-area-inset-bottom))] left-1/2 z-[80] -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-bg">
           {toast}

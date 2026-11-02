@@ -1,4 +1,4 @@
-// Crea el pago en Mercado Pago (Checkout Pro) y devuelve el link al que se redirige al cliente.
+// Crea el pago en Mercado Pago (Checkout Pro, API de Orders) y devuelve el link al que se redirige al cliente.
 //
 // Variables de entorno:
 //   MP_ACCESS_TOKEN   → Mercado Pago, "Tus integraciones" > tu aplicación > Credenciales
@@ -8,10 +8,10 @@
 // Los precios se toman del catálogo y el envío se vuelve a cotizar acá: nunca se confía en lo que manda el navegador.
 import { randomBytes } from 'node:crypto'
 import { available, parseCartKey } from '../src/data/products.js'
-import { mapLink, ZONES, type Point } from '../src/lib/shipping.js'
+import { ZONES, type Point } from '../src/lib/shipping.js'
 import { createOrder, dbConfigured } from './_lib/db.js'
 import { parsePoint, quoteShipping } from './_lib/geo.js'
-import { createPreference, mpConfigured, type Preference } from './_lib/mercadopago.js'
+import { createMpOrder, mpConfigured, type Item } from './_lib/mercadopago.js'
 import { listProducts } from './_lib/products.js'
 import { json } from './_lib/http.js'
 
@@ -40,7 +40,7 @@ export async function POST(request: Request): Promise<Response> {
     console.error('load catalog failed', err)
     return json({ error: 'db' }, 502)
   }
-  const items: Preference['items'] = []
+  const items: Item[] = []
   const units = new Map<string, number>() // unidades por producto, sumando todos los talles
   let bulky = false
   let hasCustom = false
@@ -57,7 +57,6 @@ export async function POST(request: Request): Promise<Response> {
       title: size ? `${product.name} (talle ${size})` : product.name,
       quantity: qty,
       unit_price: product.price,
-      currency_id: 'ARS',
     })
   }
   if (!items.length) return json({ error: 'empty_cart' }, 400)
@@ -81,18 +80,26 @@ export async function POST(request: Request): Promise<Response> {
   const origin = (process.env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '')
   const orderId = randomBytes(4).toString('hex').toUpperCase()
   const back = `${origin}/?pedido=${orderId}`
-  // Mercado Pago no acepta auto_return ni webhooks hacia direcciones http (por ejemplo localhost).
+  // Mercado Pago no acepta auto_return hacia direcciones http (por ejemplo localhost).
   const isPublic = origin.startsWith('https://')
 
   // El envío va como un ítem más, así se ve en el detalle del pago.
-  if (shipping > 0) items.push({ id: 'envio', title: `Envío en ${vehicle}`, quantity: 1, unit_price: shipping, currency_id: 'ARS' })
+  if (shipping > 0) items.push({ id: 'envio', title: `Envío en ${vehicle}`, quantity: 1, unit_price: shipping })
 
   try {
-    // El pedido se guarda antes de ir a pagar, como "pendiente de pago".
+    const mpOrder = await createMpOrder({
+      external_reference: orderId,
+      items,
+      payer: { first_name: name },
+      statement_descriptor: 'LIBRE',
+      online: { success_url: back, failure_url: back, pending_url: back, ...(isPublic && { auto_return: 'approved' as const }) },
+    })
+    // El pedido se guarda como "pendiente de pago", con el número de orden de Mercado Pago para consultarla después.
     // Si la base falla, igual se cobra: la venta queda registrada en Mercado Pago.
     if (dbConfigured()) {
       await createOrder({
         id: orderId,
+        mpOrderId: mpOrder.id,
         name,
         phone,
         ship: body.ship,
@@ -106,26 +113,7 @@ export async function POST(request: Request): Promise<Response> {
         total: items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0),
       }).catch((err) => console.error('save order failed', err))
     }
-    const pref = await createPreference({
-      items,
-      external_reference: orderId,
-      metadata: {
-        order_id: orderId,
-        name,
-        phone,
-        ship: body.ship,
-        street: body.ship === 'moto' ? (body.street ?? '').trim() : '',
-        zone: body.ship === 'moto' ? (body.zone ?? '') : '',
-        vehicle,
-        map: point ? mapLink(point) : '',
-        has_custom: hasCustom,
-      },
-      back_urls: { success: back, failure: back, pending: back },
-      ...(isPublic && { auto_return: 'approved', notification_url: `${origin}/api/mp-webhook` }),
-      payer: { name, phone: { number: phone } },
-      statement_descriptor: 'LIBRE',
-    })
-    return json({ orderId, url: pref.init_point })
+    return json({ orderId, url: mpOrder.checkout_url })
   } catch (err) {
     console.error('checkout failed', err)
     return json({ error: 'payment_upstream' }, 502)
