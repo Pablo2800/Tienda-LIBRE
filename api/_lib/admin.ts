@@ -5,7 +5,7 @@
 //   DATABASE_URL   → la carga Vercel al conectar la base de Neon (Storage).
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { dbConfigured } from './db.js'
-import { json } from './uber.js'
+import { json } from './http.js'
 
 const digest = (s: string) => createHash('sha256').update(s).digest()
 

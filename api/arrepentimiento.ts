@@ -4,7 +4,7 @@
 import { randomBytes } from 'node:crypto'
 import { createRevocation, dbConfigured } from './_lib/db.js'
 import { mailConfigured, notifyRevocation } from './_lib/mail.js'
-import { json } from './_lib/uber.js'
+import { json } from './_lib/http.js'
 
 export async function POST(request: Request): Promise<Response> {
   const b = ((await request.json().catch(() => ({}))) ?? {}) as Record<string, unknown>

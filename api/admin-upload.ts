@@ -7,7 +7,7 @@
 import { randomBytes } from 'node:crypto'
 import { put } from '@vercel/blob'
 import { guard } from './_lib/admin.js'
-import { json } from './_lib/uber.js'
+import { json } from './_lib/http.js'
 
 const TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
 const MAX_BYTES = 4 * 1024 * 1024

@@ -1,7 +1,7 @@
 // Pedidos para el panel del local (/admin). Pide la contraseña de ADMIN_PASSWORD.
 import { guard } from './_lib/admin.js'
 import { listOrders, listRevocations, ORDER_STATUSES, setOrderStatus, type OrderStatus } from './_lib/db.js'
-import { json } from './_lib/uber.js'
+import { json } from './_lib/http.js'
 
 export async function GET(request: Request): Promise<Response> {
   const denied = guard(request)

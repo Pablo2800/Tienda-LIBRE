@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext'
 import { useCatalog } from '../context/CatalogContext'
 import { ars } from '../lib/format'
 import { quoteDelivery, STORE_ADDRESS, ZONES, type Quote } from '../lib/shipping'
+import { AddressInput } from './AddressInput'
 import { BrandMark } from './BrandMark'
 import { OrderConfirmation } from './OrderConfirmation'
 import { savePendingOrder } from '../lib/pendingOrder'
@@ -48,7 +49,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
         setQuote(q)
         setQuoting(false)
       }
-    }, 600)
+    }, 900)
     return () => {
       cancelled = true
       clearTimeout(t)
@@ -137,7 +138,17 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
                   </div>
                   <div className="flex min-w-0 flex-col gap-[5px] md:col-span-2">
                     <label className={LABEL} htmlFor="f-street">Calle y número</label>
-                    <input className={INPUT} id="f-street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Ej. Belgrano 1450, piso 2 B" autoComplete="street-address" />
+                    <AddressInput
+                      id="f-street"
+                      className={INPUT}
+                      value={street}
+                      onChange={setStreet}
+                      onPick={(s) => {
+                        setStreet(s.street)
+                        if (s.zone) setZone(s.zone)
+                      }}
+                    />
+                    <span className="hint">Elegí tu dirección de la lista para que el envío se calcule bien.</span>
                   </div>
                   <div className="flex min-w-0 flex-col gap-[5px] md:col-span-2">
                     <label className={LABEL} htmlFor="f-zone">Departamento</label>
@@ -164,7 +175,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
                   </span>
                   <span className="price text-base">{quote?.ok ? ars(quote.fee) : 'Cotizar'}</span>
                 </label>
-                {ship === 'moto' && <QuoteBox quoting={quoting} quote={quote} hasAddress={Boolean(zone && street.trim())} vehicle={vehicle} />}
+                {ship === 'moto' && <QuoteBox quoting={quoting} quote={quote} hasAddress={Boolean(zone && street.trim())} vehicle={vehicle} zone={zone} />}
                 <label className={OPTION}>
                   <input type="radio" name="ship" checked={ship === 'retiro'} onChange={() => setShip('retiro')} />
                   <span>
@@ -240,7 +251,19 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
   )
 }
 
-function QuoteBox({ quoting, quote, hasAddress, vehicle }: { quoting: boolean; quote: Quote | null; hasAddress: boolean; vehicle: string }) {
+function QuoteBox({
+  quoting,
+  quote,
+  hasAddress,
+  vehicle,
+  zone,
+}: {
+  quoting: boolean
+  quote: Quote | null
+  hasAddress: boolean
+  vehicle: string
+  zone: string
+}) {
   if (quoting)
     return (
       <div className="quote">
@@ -262,14 +285,9 @@ function QuoteBox({ quoting, quote, hasAddress, vehicle }: { quoting: boolean; q
     <div className="quote">
       <b>Cotización recibida: {ars(quote.fee)}</b>
       <span>
-        {quote.source === 'simulado' && `${quote.km.toFixed(1)} km desde el local · `}llega en {quote.etaMinutes} min aprox.
+        {quote.km.toFixed(1)} km desde el local · llega en {quote.etaMinutes} min aprox.
       </span>
-      {quote.source === 'simulado' && (
-        <span className="hint">
-          Precio de ejemplo calculado por distancia. Cuando se carguen las credenciales de Uber Direct, este precio lo devuelve su API (
-          <code className="font-mono text-xs">POST /delivery_quotes</code>).
-        </span>
-      )}
+      {quote.approx && <span className="hint">No encontramos la calle exacta en el mapa, así que calculamos desde el centro de {zone}.</span>}
     </div>
   )
 }

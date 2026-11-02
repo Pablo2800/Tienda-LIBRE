@@ -2,7 +2,7 @@
 // Sin base de datos responde 503 y la tienda usa el catálogo de src/data/products.ts.
 import { dbConfigured } from './_lib/db.js'
 import { listProducts } from './_lib/products.js'
-import { json } from './_lib/uber.js'
+import { json } from './_lib/http.js'
 
 export async function GET(): Promise<Response> {
   if (!dbConfigured()) return json({ error: 'db_not_configured' }, 503)

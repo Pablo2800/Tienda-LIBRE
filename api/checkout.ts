@@ -8,11 +8,12 @@
 // Los precios se toman del catálogo y el envío se vuelve a cotizar acá: nunca se confía en lo que manda el navegador.
 import { randomBytes } from 'node:crypto'
 import { available, parseCartKey } from '../src/data/products.js'
-import { simulatedQuote, ZONES } from '../src/lib/shipping.js'
+import { ZONES } from '../src/lib/shipping.js'
 import { createOrder, dbConfigured } from './_lib/db.js'
+import { quoteShipping } from './_lib/geo.js'
 import { createPreference, mpConfigured, type Preference } from './_lib/mercadopago.js'
 import { listProducts } from './_lib/products.js'
-import { json, uberQuote } from './_lib/uber.js'
+import { json } from './_lib/http.js'
 
 type Body = {
   items?: Record<string, number>
@@ -60,24 +61,17 @@ export async function POST(request: Request): Promise<Response> {
   }
   if (!items.length) return json({ error: 'empty_cart' }, 400)
 
-  // Envío: se cotiza de nuevo con Uber (o simulado si no hay credenciales).
+  // Envío: se cotiza de nuevo acá con la misma cuenta que vio el cliente.
   const vehicle = bulky ? 'auto' : 'moto'
   let shipping = 0
-  let quoteId = ''
+  const quoteId = ''
   if (body.ship === 'moto') {
     const zone = ZONES.find((z) => z.name === body.zone)
     const street = body.street?.trim().slice(0, 120)
     if (!zone || !street) return json({ error: 'missing_address' }, 400)
-    try {
-      const uber = await uberQuote(street, zone.name, zone.zip)
-      const quote = uber ?? simulatedQuote(street, zone.name, vehicle)
-      if (!quote.ok) return json({ error: 'no_coverage' }, 400)
-      shipping = Math.round(quote.fee)
-      if (uber?.ok) quoteId = uber.quoteId
-    } catch (err) {
-      console.error('uber quote failed', err)
-      return json({ error: 'shipping_upstream' }, 502)
-    }
+    const quote = await quoteShipping(street, zone.name, vehicle)
+    if (!quote.ok) return json({ error: 'no_coverage' }, 400)
+    shipping = quote.fee
   } else if (body.ship !== 'retiro') {
     return json({ error: 'missing_shipping' }, 400)
   }

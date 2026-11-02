@@ -24,11 +24,11 @@ Los estilos usan [Tailwind CSS](https://tailwindcss.com) (v4, plugin de Vite). C
 
 - `src/data/products.ts`: tipos de producto y catálogo inicial. Con base de datos, el catálogo se edita en `/admin`.
 - `src/lib/shipping.ts`: pide la cotización a `/api/quote`. Si no hay credenciales, usa una simulada por distancia.
-- `api/quote.ts`: función del servidor (Vercel) que cotiza con Uber Direct.
+- `api/quote.ts`: función del servidor (Vercel) que cotiza el envío por distancia.
 - `api/checkout.ts`, `api/order.ts`, `api/mp-webhook.ts`: pago con Mercado Pago (crear el pago, confirmar el estado al volver y recibir avisos).
 - `api/admin-orders.ts`, `api/admin-products.ts`, `api/admin-upload.ts`, `src/components/AdminPanel.tsx` y `AdminProducts.tsx`: panel del local en `/admin` (pedidos y productos).
 - `api/products.ts` y `src/context/CatalogContext.tsx`: catálogo que ve la tienda.
-- `api/_lib/`: código compartido de Uber, Mercado Pago y la base de datos (no se publica como ruta).
+- `api/_lib/`: código compartido: mapa y envíos, Mercado Pago, mails y la base de datos (no se publica como ruta).
 - `src/context/CartContext.tsx`: carrito, guardado en el navegador.
 - `src/components/`: header, tarjetas, detalle de producto, carrito, checkout y seguimiento.
 
@@ -68,19 +68,20 @@ La primera imagen (o el `poster` del primer video) se usa como foto de la tarjet
 1. Publicar la demo (Vercel o Netlify) para mostrarla.
 2. ~~Backend: productos, stock y pedidos en una base de datos, con panel de administración.~~ Hecho.
 3. Pagos con Mercado Pago (Checkout Pro y webhook de confirmación).
-4. Envíos con Uber Direct: cotización, creación del envío y webhooks de estado.
+4. Envíos: precio por distancia real, despacho manual por Uber Envíos.
 5. Dominio propio.
 
-## Envíos con Uber Direct
+## Envíos
 
-La cotización real la hace `api/quote.ts`, que corre en el servidor para no exponer las credenciales.
-Mientras no estén cargadas, la tienda sigue mostrando el precio simulado.
+El envío se cobra según la distancia real entre el local y la dirección del cliente.
+`api/quote.ts` ubica la dirección en el mapa (primero con Georef, el servicio de direcciones del Estado, y si no la encuentra con OpenStreetMap),
+mide la distancia y aplica la tarifa. Si no encuentra la calle, calcula desde el centro del departamento.
+El pedido se despacha a mano desde la app de Uber (opción Envíos) u otro cadete.
 
-1. Crear la cuenta de empresa en [direct.uber.com](https://direct.uber.com) y entrar a la pestaña **Developer**.
-   Ahí están el Customer ID, el Client ID y el Client Secret. Con la barra azul arriba está en modo prueba (no crea envíos reales).
-2. En Vercel: **Settings > Environment Variables**, cargar `UBER_CLIENT_ID`, `UBER_CLIENT_SECRET` y `UBER_CUSTOMER_ID`
-   (y opcionalmente `STORE_STREET`, `STORE_CITY`, `STORE_ZIP` con la dirección del local). Después, volver a desplegar.
-3. En local: copiar `.env.example` como `.env.local`, completarlo y correr `npm run dev`.
+Todo se ajusta en `src/data/store.ts`:
+
+- `location`: coordenadas del local, copiadas de Google Maps (clic derecho sobre el local). Si está vacía, se busca por `address`.
+- `shipping`: precio base y por km para moto y auto, y la distancia máxima. Para calibrarlo, simulá envíos en la app de Uber a 2 o 3 distancias.
 
 ## Pagos con Mercado Pago
 
