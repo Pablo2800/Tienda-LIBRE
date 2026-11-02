@@ -68,7 +68,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
   const ready = Boolean(name.trim() && phone.trim() && (ship === 'retiro' || (ship === 'moto' && quote?.ok)))
 
   // Con Mercado Pago configurado, crea el pago en el servidor y redirige a su checkout.
-  // Si no está configurado (o no hay servidor), simula el pago para la demo.
+  // Si no está configurado (o no hay servidor), en desarrollo simula el pago para poder probar el resto.
   async function pay() {
     setPaying(true)
     setPayError('')
@@ -96,7 +96,13 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
         return
       }
     } catch {
-      // Sin servidor: seguimos con el pago simulado.
+      // Sin servidor: en desarrollo seguimos con el pago simulado.
+    }
+    // En la tienda publicada nunca se simula: si Mercado Pago no está configurado, el pedido no se confirma.
+    if (!import.meta.env.DEV) {
+      setPayError('No pudimos iniciar el pago. Probá de nuevo en unos minutos.')
+      setPaying(false)
+      return
     }
     setTimeout(() => {
       setOrderId(String(Math.floor(10000 + Math.random() * 89999)))
@@ -215,9 +221,16 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
           {step === 2 && (
             <div className="panel">
               <h3 className="panel-title">Pago</h3>
-              <p className="hint">Pagás en Mercado Pago con tarjeta, débito o dinero en cuenta, y volvés a la tienda al terminar.</p>
+              <div className="flex flex-wrap gap-1.5" aria-label="Medios de pago">
+                {['Tarjeta de crédito', 'Tarjeta de débito', 'Dinero en Mercado Pago', 'Efectivo en Rapipago o Pago Fácil'].map((m) => (
+                  <span key={m} className="rounded-full border border-line bg-bg px-2.5 py-1 text-[12.5px]">
+                    {m}
+                  </span>
+                ))}
+              </div>
+              <p className="hint">No necesitás cuenta de Mercado Pago: elegís tarjeta, cargás los datos y pagás como invitado. Al terminar volvés a la tienda.</p>
               <button className="w-full rounded-[10px] bg-mercadopago px-4 py-[13px] text-base font-bold text-white disabled:opacity-60" onClick={pay} disabled={paying}>
-                {paying ? 'Procesando pago…' : `Pagar ${ars(total)} con Mercado Pago`}
+                {paying ? 'Procesando pago…' : `Pagar ${ars(total)} con tarjeta o Mercado Pago`}
               </button>
               {payError && <span className="text-sm text-warn">{payError}</span>}
               <button className="btn-ghost" onClick={() => setStep(1)} disabled={paying}>
@@ -226,6 +239,11 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
             </div>
           )}
 
+          {step === 3 && import.meta.env.DEV && (
+            <p className="rounded-lg border border-warn px-3 py-2 text-sm text-warn">
+              Pago simulado: el servidor no tiene Mercado Pago configurado (falta MP_ACCESS_TOKEN en .env.local). Solo pasa en desarrollo.
+            </p>
+          )}
           {step === 3 && (
             <OrderConfirmation
               orderId={orderId}
