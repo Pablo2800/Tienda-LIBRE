@@ -2,7 +2,7 @@
 // El servidor (/api/quote) ubica las dos direcciones en el mapa, mide la distancia y aplica
 // la tarifa de src/data/store.ts. Si no puede ubicar la calle, usa el centro del departamento.
 
-import { STORE } from '../data/store'
+import { STORE } from '../data/store.js'
 
 export const STORE_ADDRESS = STORE.address
 

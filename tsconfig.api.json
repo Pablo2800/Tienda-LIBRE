@@ -1,0 +1,15 @@
+{
+  // Chequeo de las funciones de /api como las corre Vercel (Node con módulos ES):
+  // los imports relativos necesitan la extensión .js, si no la función se cae al arrancar.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["api"]
+}
