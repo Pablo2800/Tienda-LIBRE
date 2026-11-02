@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext'
 import { useCatalog } from '../context/CatalogContext'
 import { ars } from '../lib/format'
 import { quoteDelivery, STORE_ADDRESS, ZONES, type Quote } from '../lib/shipping'
+import { AddressInput } from './AddressInput'
 import { BrandMark } from './BrandMark'
 import { OrderConfirmation } from './OrderConfirmation'
 import { savePendingOrder } from '../lib/pendingOrder'
@@ -137,7 +138,17 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
                   </div>
                   <div className="flex min-w-0 flex-col gap-[5px] md:col-span-2">
                     <label className={LABEL} htmlFor="f-street">Calle y número</label>
-                    <input className={INPUT} id="f-street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Ej. Belgrano 1450, piso 2 B" autoComplete="street-address" />
+                    <AddressInput
+                      id="f-street"
+                      className={INPUT}
+                      value={street}
+                      onChange={setStreet}
+                      onPick={(s) => {
+                        setStreet(s.street)
+                        if (s.zone) setZone(s.zone)
+                      }}
+                    />
+                    <span className="hint">Elegí tu dirección de la lista para que el envío se calcule bien.</span>
                   </div>
                   <div className="flex min-w-0 flex-col gap-[5px] md:col-span-2">
                     <label className={LABEL} htmlFor="f-zone">Departamento</label>
