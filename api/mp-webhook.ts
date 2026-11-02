@@ -1,14 +1,13 @@
-// Mercado Pago avisa acá cada vez que cambia un pago (se configura solo al crear el pago).
+// Mercado Pago avisa acá cada vez que cambia una orden de pago.
+// Se configura en "Tus integraciones" > tu aplicación > Webhooks > Configurar notificaciones,
+// con la URL https://<tu tienda>/api/mp-webhook y el evento "Order (Mercado Pago)".
 //
 // Variable de entorno opcional:
-//   MP_WEBHOOK_SECRET → "Tus integraciones" > tu aplicación > Webhooks > Clave secreta.
+//   MP_WEBHOOK_SECRET → la clave secreta que muestra esa misma pantalla.
 //                       Si está, se rechazan los avisos que no vengan firmados por Mercado Pago.
-//
-// Actualiza el pedido en la base. Próximo paso: cuando el pago queda aprobado y el pedido
-// es con envío, crear el envío en Uber Direct con el quote_id guardado.
 import { dbConfigured, recordPayment } from './_lib/db.js'
 import { notifySale } from './_lib/mail.js'
-import { getPayment, mpConfigured, validSignature } from './_lib/mercadopago.js'
+import { getMpOrder, mpConfigured, payStatus, validSignature } from './_lib/mercadopago.js'
 import { json } from './_lib/http.js'
 
 export async function POST(request: Request): Promise<Response> {
@@ -17,16 +16,17 @@ export async function POST(request: Request): Promise<Response> {
   const body = (await request.json().catch(() => ({}))) as { type?: string; data?: { id?: string } }
   const type = url.searchParams.get('type') ?? body.type
   const dataId = url.searchParams.get('data.id') ?? String(body.data?.id ?? '')
-  if (type !== 'payment' || !dataId) return json({ ignored: true })
+  if (type !== 'order' || !dataId) return json({ ignored: true })
 
   const secret = process.env.MP_WEBHOOK_SECRET
   if (secret && !validSignature(request, dataId, secret)) return json({ error: 'invalid_signature' }, 401)
 
   try {
-    const payment = await getPayment(dataId)
-    console.log('mercadopago payment', { id: payment.id, status: payment.status, order: payment.external_reference })
-    if (payment.external_reference && dbConfigured()) {
-      const paid = await recordPayment(payment.external_reference, String(payment.id), payment.status)
+    const order = await getMpOrder(dataId)
+    const status = payStatus(order)
+    console.log('mercadopago order', { id: order.id, status: order.status, pay: status, pedido: order.external_reference })
+    if (order.external_reference && dbConfigured()) {
+      const paid = await recordPayment(order.external_reference, order.id, status)
       // Si el mail falla no se reintenta el webhook: el pago ya quedó registrado.
       if (paid) await notifySale(paid, process.env.SITE_URL || url.origin).catch((err) => console.error('sale mail failed', err))
     }

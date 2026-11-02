@@ -85,15 +85,20 @@ Todo se ajusta en `src/data/store.ts`:
 
 ## Pagos con Mercado Pago
 
-El botón de pago crea el cobro en el servidor (`api/checkout.ts`) y lleva al cliente al checkout de Mercado Pago.
+El botón de pago crea el cobro en el servidor (`api/checkout.ts`) con la API de Orders de Mercado Pago
+y lleva al cliente al checkout de Mercado Pago, donde puede pagar con tarjeta de débito, crédito o dinero en cuenta.
 Los precios y el envío se recalculan en el servidor, así que no se pueden alterar desde el navegador.
 Al volver, la tienda confirma el estado del pago con Mercado Pago antes de mostrar el pedido.
-Mientras no haya credenciales, el pago se simula.
+Mientras no haya credenciales, el pago se simula (solo en `npm run dev`).
 
-1. Entrar a [Tus integraciones](https://www.mercadopago.com.ar/developers/panel/app) y crear una aplicación (tipo Checkout Pro).
-2. Copiar el **Access Token** de las credenciales de prueba como `MP_ACCESS_TOKEN` (en `.env.local` y en Vercel).
-3. Para probar, pagar con la cuenta de prueba **Comprador** que aparece en la aplicación, en una ventana de incógnito.
-4. Opcional: en **Webhooks**, copiar la clave secreta como `MP_WEBHOOK_SECRET`.
+1. Entrar a [Tus integraciones](https://www.mercadopago.com.ar/developers/panel/app) y crear una aplicación de tipo
+   **Pagos online** > **Checkout Pro**, eligiendo **API de Orders**.
+2. Copiar el **Access Token** como `MP_ACCESS_TOKEN` (en `.env.local` y en Vercel).
+   La API de Orders no acepta los tokens que empiezan con `TEST-`: para probar, hay que crear
+   **cuentas de prueba** (una vendedora y una compradora), entrar con la vendedora y usar sus credenciales de producción (`APP_USR-...`).
+   Después se paga con la cuenta compradora, en una ventana de incógnito.
+3. En **Webhooks** > **Configurar notificaciones**, poner la URL `https://<tu tienda>/api/mp-webhook`,
+   marcar el evento **Order (Mercado Pago)** y guardar. Copiar la clave secreta como `MP_WEBHOOK_SECRET` (opcional, recomendado).
 
 En local (`http://localhost`) Mercado Pago no vuelve solo a la tienda ni manda avisos: hay que tocar "Volver al sitio".
 En Vercel funciona completo.

@@ -5,9 +5,9 @@ import { OrderConfirmation } from './OrderConfirmation'
 
 type Status = 'checking' | 'approved' | 'pending' | 'rejected' | 'error'
 
-// Pantalla a la que vuelve el cliente desde Mercado Pago (?pedido=...&payment_id=...).
+// Pantalla a la que vuelve el cliente desde Mercado Pago (?pedido=...).
 // El estado del pago se confirma con el servidor, no con lo que dice la URL.
-export function PaymentReturn({ orderId, paymentId, onApproved, onClose }: { orderId: string; paymentId: string | null; onApproved: () => void; onClose: () => void }) {
+export function PaymentReturn({ orderId, mpOrderId, onApproved, onClose }: { orderId: string; mpOrderId: string | null; onApproved: () => void; onClose: () => void }) {
   const [status, setStatus] = useState<Status>('checking')
   const [order] = useState(() => loadPendingOrder(orderId))
   // Se guarda en un ref para que vaciar el carrito no vuelva a disparar la consulta.
@@ -15,12 +15,9 @@ export function PaymentReturn({ orderId, paymentId, onApproved, onClose }: { ord
   approvedRef.current = onApproved
 
   useEffect(() => {
-    if (!paymentId) {
-      setStatus('rejected')
-      return
-    }
     let cancelled = false
-    fetch(`/api/order?pedido=${encodeURIComponent(orderId)}&payment_id=${encodeURIComponent(paymentId)}`)
+    const query = new URLSearchParams({ pedido: orderId, ...(mpOrderId && { order_id: mpOrderId }) })
+    fetch(`/api/order?${query}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((data: { status: string }) => {
         if (cancelled) return
@@ -28,14 +25,14 @@ export function PaymentReturn({ orderId, paymentId, onApproved, onClose }: { ord
           setStatus('approved')
           clearPendingOrder()
           approvedRef.current()
-        } else if (data.status === 'pending' || data.status === 'in_process' || data.status === 'authorized') setStatus('pending')
+        } else if (data.status === 'pending') setStatus('pending')
         else setStatus('rejected')
       })
       .catch(() => !cancelled && setStatus('error'))
     return () => {
       cancelled = true
     }
-  }, [orderId, paymentId])
+  }, [orderId, mpOrderId])
 
   return (
     <section className="fixed inset-0 z-[60] overflow-auto bg-bg pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]" role="dialog" aria-modal="true" aria-label="Estado del pago">
