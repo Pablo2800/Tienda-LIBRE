@@ -43,11 +43,11 @@ export const inMendoza = (p: Point) => p.lat > -33.25 && p.lat < -32.6 && p.lng 
 
 /** Precio para una distancia. approx indica que se usó el centro del departamento y no la dirección. */
 export function priceForKm(km: number, vehicle: Vehicle, to: Point, approx = false): Quote {
-  const { maxKm, ...rates } = STORE.shipping
+  const { maxKm, markup, ...rates } = STORE.shipping
   if (km > maxKm) return { ok: false }
   const { base, perKm } = rates[vehicle]
   // Un mínimo de 1 km, para que dentro de la misma cuadra no cobre solo la base.
-  const fee = Math.round((base + Math.max(km, 1) * perKm) / 50) * 50
+  const fee = Math.round(((base + Math.max(km, 1) * perKm) * (1 + markup)) / 50) * 50
   return { ok: true, fee, km, vehicle, approx, to, etaMinutes: Math.round(20 + km * 3) }
 }
 

@@ -10,17 +10,19 @@ export const STORE = {
    * Ubicación del local, para medir la distancia del envío. En Google Maps: clic derecho sobre el local
    * y clic en los números (ej. -32.9254, -68.8450) para copiarlos. Si queda vacía, se busca por la dirección.
    */
-  location: null as { lat: number; lng: number } | null,
+  location: { lat: -32.943773107343524, lng: -68.81648185933199 } as { lat: number; lng: number } | null,
   /**
    * Precio del envío: base + precio por km de recorrido, redondeado de a $50.
    * Para ajustarlo, simulá envíos en la app de Uber (opción Envíos) a 2 o 3 distancias y compará.
-   * Ej.: con base 2000 y 480 por km, 3,1 km dan $3.500.
+   * Ej.: con base 2000 y 480 por km, 3,1 km dan $3.500 (lo que cobra Uber), y con el recargo, $3.850.
    */
   shipping: {
     moto: { base: 2000, perKm: 480 },
     auto: { base: 3500, perKm: 900 },
     /** Más lejos que esto (km de recorrido) no se hacen envíos. */
     maxKm: 20,
+    /** Recargo sobre la tarifa, porque el envío se pide a mano desde el local. 0.1 = 10% más. */
+    markup: 0.1,
   },
 }
 
