@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { clearPendingOrder, loadPendingOrder } from '../lib/pendingOrder'
 import { BrandMark } from './BrandMark'
-import { OrderTracking } from './OrderTracking'
+import { OrderConfirmation } from './OrderConfirmation'
 
 type Status = 'checking' | 'approved' | 'pending' | 'rejected' | 'error'
 
@@ -55,10 +55,10 @@ export function PaymentReturn({ orderId, paymentId, onApproved, onClose }: { ord
           </div>
         )}
         {status === 'approved' && (
-          <OrderTracking
+          <OrderConfirmation
             orderId={orderId}
             customerName={order?.name ?? ''}
-            delivery={order?.delivery ? { street: order.street, zone: order.zone, vehicle: order.vehicle } : null}
+            delivery={order?.delivery ? { street: order.street, zone: order.zone } : null}
             hasCustom={order?.hasCustom ?? false}
             onFinish={onClose}
           />

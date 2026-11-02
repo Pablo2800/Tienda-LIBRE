@@ -1,3 +1,5 @@
+import { STORE } from '../data/store'
+
 interface Props {
   query: string
   onQuery: (q: string) => void
@@ -10,8 +12,8 @@ export function Header({ query, onQuery, cartCount, onOpenCart }: Props) {
     <>
       <div className="bg-band text-[12.5px] text-band-ink">
         <div className="wrap flex flex-wrap justify-between gap-3 py-1.5">
-          <span>Versión de demostración. Productos, precios y envío son de ejemplo.</span>
-          <span>Mendoza · Atención lun a sáb 9 a 19 h</span>
+          <span>Envío en el día en Gran Mendoza · Pagá con Mercado Pago</span>
+          <span>Atención {STORE.hours}</span>
         </div>
       </div>
       <header className="sticky top-[env(safe-area-inset-top)] z-20 border-b border-line bg-surface">

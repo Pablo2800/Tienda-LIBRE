@@ -70,6 +70,7 @@ export function AdminPanel() {
   const [password, setPassword] = useState(readSaved)
   const [draft, setDraft] = useState('')
   const [orders, setOrders] = useState<Order[] | null>(null)
+  const [revocations, setRevocations] = useState<Revocation[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState(0)
@@ -89,6 +90,7 @@ export function AdminPanel() {
         return
       }
       setOrders(data.orders)
+      setRevocations(data.revocations ?? [])
       try {
         sessionStorage.setItem(KEY, pass)
       } catch {
@@ -212,6 +214,7 @@ export function AdminPanel() {
               <AdminProducts key={refresh} password={password} onError={onAccessError} />
             ) : (
               <>
+                {revocations.length > 0 && <Revocations list={revocations} />}
                 <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar pedidos">
                   {FILTERS.map((f, i) => (
                     <button key={f.label} className="chip" aria-pressed={i === filter} onClick={() => setFilter(i)}>
@@ -233,6 +236,30 @@ export function AdminPanel() {
         )}
       </main>
     </div>
+  )
+}
+
+type Revocation = { code: string; created_at: string; order_id: string; name: string; contact: string; reason: string }
+
+// Pedidos de arrepentimiento (botón del pie de la tienda). Hay que contactar al cliente para la devolución.
+function Revocations({ list }: { list: Revocation[] }) {
+  return (
+    <details className="panel gap-2" open={Date.now() - new Date(list[0].created_at).getTime() < 15 * 86400000}>
+      <summary className="cursor-pointer font-semibold">Pedidos de arrepentimiento ({list.length})</summary>
+      {list.map((r) => (
+        <div key={r.code} className="border-t border-line pt-2 text-sm">
+          <span className="font-mono font-semibold">{r.code}</span>
+          <span className="ml-2 text-muted">
+            {new Date(r.created_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+          </span>
+          <div>
+            {r.name} · {r.contact}
+            {r.order_id && ` · pedido #${r.order_id}`}
+          </div>
+          {r.reason && <div className="text-muted">{r.reason}</div>}
+        </div>
+      ))}
+    </details>
   )
 }
 

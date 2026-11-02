@@ -1,13 +1,14 @@
 // Pedidos para el panel del local (/admin). Pide la contraseña de ADMIN_PASSWORD.
 import { guard } from './_lib/admin.js'
-import { listOrders, ORDER_STATUSES, setOrderStatus, type OrderStatus } from './_lib/db.js'
+import { listOrders, listRevocations, ORDER_STATUSES, setOrderStatus, type OrderStatus } from './_lib/db.js'
 import { json } from './_lib/uber.js'
 
 export async function GET(request: Request): Promise<Response> {
   const denied = guard(request)
   if (denied) return denied
   try {
-    return json({ orders: await listOrders() })
+    const [orders, revocations] = await Promise.all([listOrders(), listRevocations()])
+    return json({ orders, revocations })
   } catch (err) {
     console.error('list orders failed', err)
     return json({ error: 'db' }, 502)

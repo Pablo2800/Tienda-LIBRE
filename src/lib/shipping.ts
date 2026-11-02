@@ -3,7 +3,9 @@
 // POST /v1/customers/{customer_id}/delivery_quotes de Uber Direct). Si el servidor no
 // tiene credenciales todavía, o no responde, usa una cotización simulada por distancia.
 
-export const STORE_ADDRESS = 'Av. San Martín 1200, Ciudad de Mendoza'
+import { STORE } from '../data/store'
+
+export const STORE_ADDRESS = STORE.address
 
 export type Vehicle = 'moto' | 'auto'
 
