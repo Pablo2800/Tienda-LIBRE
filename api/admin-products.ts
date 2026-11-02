@@ -1,7 +1,7 @@
 // Productos para el panel del local (/admin): listar, crear o editar, borrar y ordenar.
 import { guard } from './_lib/admin.js'
 import { listProducts, parseProduct, removeProduct, reorder, save } from './_lib/products.js'
-import { json } from './_lib/uber.js'
+import { json } from './_lib/http.js'
 
 export async function GET(request: Request): Promise<Response> {
   const denied = guard(request)

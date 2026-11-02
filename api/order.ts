@@ -3,7 +3,7 @@
 import { dbConfigured, recordPayment } from './_lib/db.js'
 import { notifySale } from './_lib/mail.js'
 import { getPayment, mpConfigured } from './_lib/mercadopago.js'
-import { json } from './_lib/uber.js'
+import { json } from './_lib/http.js'
 
 export async function GET(request: Request): Promise<Response> {
   if (!mpConfigured()) return json({ error: 'not_configured' }, 503)
