@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useCart } from '../context/CartContext'
 import { useCatalog } from '../context/CatalogContext'
 import { ars } from '../lib/format'
-import { quoteDelivery, STORE_ADDRESS, ZONES, type Quote } from '../lib/shipping'
+import { quoteDelivery, STORE_ADDRESS, ZONES, type Point, type Quote } from '../lib/shipping'
 import { AddressInput } from './AddressInput'
 import { BrandMark } from './BrandMark'
 import { OrderConfirmation } from './OrderConfirmation'
 import { savePendingOrder } from '../lib/pendingOrder'
+
+// Leaflet pesa: el mapa se descarga recién cuando hay una dirección para mostrar.
+const MapPicker = lazy(() => import('./MapPicker'))
 
 type Ship = '' | 'moto' | 'retiro'
 const STEPS = ['Datos y envío', 'Pago', 'Confirmación']
@@ -24,6 +27,8 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
   const [phone, setPhone] = useState('')
   const [street, setStreet] = useState('')
   const [zone, setZone] = useState('')
+  // Punto exacto de entrega: el de la sugerencia elegida o donde el cliente dejó el pin.
+  const [point, setPoint] = useState<Point | null>(null)
   const [ship, setShip] = useState<Ship>('')
   const [quote, setQuote] = useState<Quote | null>(null)
   const [quoting, setQuoting] = useState(false)
@@ -44,7 +49,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
     let cancelled = false
     setQuoting(true)
     const t = setTimeout(async () => {
-      const q = await quoteDelivery(street, zone, vehicle)
+      const q = await quoteDelivery(street, zone, vehicle, point)
       if (!cancelled) {
         setQuote(q)
         setQuoting(false)
@@ -54,7 +59,9 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
       cancelled = true
       clearTimeout(t)
     }
-  }, [ship, zone, street, vehicle])
+  }, [ship, zone, street, vehicle, point])
+
+  const mapPoint = point ?? (quote?.ok ? quote.to : null)
 
   const shipFee = ship === 'moto' && quote?.ok ? quote.fee : 0
   const total = subtotal + shipFee
@@ -69,7 +76,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, name, phone, ship, street, zone }),
+        body: JSON.stringify({ items, name, phone, ship, street, zone, point }),
       })
       if (res.headers.get('content-type')?.includes('application/json') && res.status !== 503) {
         const data = await res.json()
@@ -142,9 +149,13 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
                       id="f-street"
                       className={INPUT}
                       value={street}
-                      onChange={setStreet}
+                      onChange={(v) => {
+                        setStreet(v)
+                        setPoint(null) // dirección nueva: el pin anterior ya no vale
+                      }}
                       onPick={(s) => {
                         setStreet(s.street)
+                        setPoint(s.point)
                         if (s.zone) setZone(s.zone)
                       }}
                     />
@@ -176,6 +187,14 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
                   <span className="price text-base">{quote?.ok ? ars(quote.fee) : 'Cotizar'}</span>
                 </label>
                 {ship === 'moto' && <QuoteBox quoting={quoting} quote={quote} hasAddress={Boolean(zone && street.trim())} vehicle={vehicle} zone={zone} />}
+                {ship === 'moto' && mapPoint && (
+                  <div className="flex flex-col gap-1.5">
+                    <Suspense fallback={<div className="h-56 rounded-lg border border-line bg-bg" />}>
+                      <MapPicker point={mapPoint} onMove={setPoint} />
+                    </Suspense>
+                    <span className="hint">¿El pin no está en tu casa? Arrastralo o tocá el mapa donde corresponde y recalculamos el envío.</span>
+                  </div>
+                )}
                 <label className={OPTION}>
                   <input type="radio" name="ship" checked={ship === 'retiro'} onChange={() => setShip('retiro')} />
                   <span>
@@ -287,7 +306,7 @@ function QuoteBox({
       <span>
         {quote.km.toFixed(1)} km desde el local · llega en {quote.etaMinutes} min aprox.
       </span>
-      {quote.approx && <span className="hint">No encontramos la calle exacta en el mapa, así que calculamos desde el centro de {zone}.</span>}
+      {quote.approx && <span className="hint">No encontramos la calle exacta, así que calculamos desde el centro de {zone}. Marcá tu casa en el mapa para un precio justo.</span>}
     </div>
   )
 }

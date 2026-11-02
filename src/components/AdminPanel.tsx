@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ars } from '../lib/format'
+import { mapLink } from '../lib/shipping'
 import { AdminProducts } from './AdminProducts'
 import { BrandMark } from './BrandMark'
 
@@ -18,6 +19,8 @@ type Order = {
   street: string
   zone: string
   vehicle: 'moto' | 'auto'
+  lat: number | null
+  lng: number | null
   has_custom: boolean
   items: { key: string; title: string; quantity: number; unit_price: number }[]
   shipping: number
@@ -280,7 +283,17 @@ function OrderCard({ order: o, onStatus }: { order: Order; onStatus: (s: Status)
         <a className="text-accent underline" href={`tel:${o.phone.replace(/[^\d+]/g, '')}`}>
           {o.phone}
         </a>
-        <div className="text-sm text-muted">{o.ship === 'moto' ? `Envío en ${o.vehicle} a ${o.street}, ${o.zone}` : 'Retira en el local'}</div>
+        <div className="text-sm text-muted">
+          {o.ship === 'moto' ? `Envío en ${o.vehicle} a ${o.street}, ${o.zone}` : 'Retira en el local'}
+          {o.ship === 'moto' && o.lat != null && o.lng != null && (
+            <>
+              {' · '}
+              <a className="text-accent underline" href={mapLink({ lat: o.lat, lng: o.lng })} target="_blank" rel="noreferrer">
+                Ver en el mapa
+              </a>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-1 border-t border-line pt-2.5 text-sm">

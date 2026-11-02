@@ -8,9 +8,9 @@
 // Los precios se toman del catálogo y el envío se vuelve a cotizar acá: nunca se confía en lo que manda el navegador.
 import { randomBytes } from 'node:crypto'
 import { available, parseCartKey } from '../src/data/products.js'
-import { ZONES } from '../src/lib/shipping.js'
+import { mapLink, ZONES, type Point } from '../src/lib/shipping.js'
 import { createOrder, dbConfigured } from './_lib/db.js'
-import { quoteShipping } from './_lib/geo.js'
+import { parsePoint, quoteShipping } from './_lib/geo.js'
 import { createPreference, mpConfigured, type Preference } from './_lib/mercadopago.js'
 import { listProducts } from './_lib/products.js'
 import { json } from './_lib/http.js'
@@ -22,6 +22,7 @@ type Body = {
   ship?: 'moto' | 'retiro'
   street?: string
   zone?: string
+  point?: unknown
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -64,14 +65,15 @@ export async function POST(request: Request): Promise<Response> {
   // Envío: se cotiza de nuevo acá con la misma cuenta que vio el cliente.
   const vehicle = bulky ? 'auto' : 'moto'
   let shipping = 0
-  const quoteId = ''
+  let point: Point | null = null
   if (body.ship === 'moto') {
     const zone = ZONES.find((z) => z.name === body.zone)
     const street = body.street?.trim().slice(0, 120)
     if (!zone || !street) return json({ error: 'missing_address' }, 400)
-    const quote = await quoteShipping(street, zone.name, vehicle)
+    const quote = await quoteShipping(street, zone.name, vehicle, parsePoint(body.point))
     if (!quote.ok) return json({ error: 'no_coverage' }, 400)
     shipping = quote.fee
+    point = quote.to
   } else if (body.ship !== 'retiro') {
     return json({ error: 'missing_shipping' }, 400)
   }
@@ -97,7 +99,7 @@ export async function POST(request: Request): Promise<Response> {
         street: body.ship === 'moto' ? (body.street ?? '').trim() : '',
         zone: body.ship === 'moto' ? (body.zone ?? '') : '',
         vehicle,
-        quoteId,
+        point,
         hasCustom,
         items: items.map((i) => ({ key: i.id, title: i.title, quantity: i.quantity, unit_price: i.unit_price })),
         shipping,
@@ -115,7 +117,7 @@ export async function POST(request: Request): Promise<Response> {
         street: body.ship === 'moto' ? (body.street ?? '').trim() : '',
         zone: body.ship === 'moto' ? (body.zone ?? '') : '',
         vehicle,
-        quote_id: quoteId,
+        map: point ? mapLink(point) : '',
         has_custom: hasCustom,
       },
       back_urls: { success: back, failure: back, pending: back },

@@ -7,6 +7,7 @@
 //                    que solo puede mandar al mail con el que se creó la cuenta de Resend.
 //
 // Si falta la configuración no se manda nada y la tienda sigue funcionando.
+import { mapLink } from '../../src/lib/shipping.js'
 import type { OrderItem } from './db.js'
 
 export const mailConfigured = () => Boolean(process.env.RESEND_API_KEY && process.env.NOTIFY_EMAIL)
@@ -42,6 +43,8 @@ export type PaidOrder = {
   street: string
   zone: string
   vehicle: string
+  lat: number | null
+  lng: number | null
   has_custom: boolean
   items: OrderItem[]
   total: number
@@ -57,7 +60,13 @@ export function notifySale(o: PaidOrder, origin: string) {
         ['Pedido', `#${esc(o.id)}`],
         ['Cliente', esc(o.name)],
         ['Teléfono', esc(o.phone)],
-        ['Entrega', o.ship === 'moto' ? `Envío en ${esc(o.vehicle)} a ${esc(o.street)}, ${esc(o.zone)}` : 'Retira en el local'],
+        [
+          'Entrega',
+          o.ship === 'moto'
+            ? `Envío en ${esc(o.vehicle)} a ${esc(o.street)}, ${esc(o.zone)}` +
+              (o.lat != null && o.lng != null ? ` · <a href="${mapLink({ lat: o.lat, lng: o.lng })}">Ver en el mapa</a>` : '')
+            : 'Retira en el local',
+        ],
         ['Productos', items],
         ['Total', `<b>${ars(o.total)}</b>`],
       ]) +
