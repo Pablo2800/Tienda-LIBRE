@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { STORE } from '../data/store'
 import { ars } from '../lib/format'
+import { waPhone } from '../lib/phone'
 import { mapLink } from '../lib/shipping'
 import { AdminProducts } from './AdminProducts'
 import { BrandMark } from './BrandMark'
@@ -266,7 +268,21 @@ function Revocations({ list }: { list: Revocation[] }) {
   )
 }
 
+// Mensaje de confirmación que el local le manda al cliente por WhatsApp desde el panel.
+function confirmLink(o: Order) {
+  const phone = waPhone(o.phone)
+  if (!phone) return ''
+  const firstName = o.name.split(' ')[0]
+  const next =
+    o.ship === 'moto'
+      ? `Ahora coordinamos el envío a ${o.street}, ${o.zone}. Te avisamos por acá cuando salga.`
+      : `Ya podés pasar a retirarla por ${STORE.address}. Te esperamos.`
+  const text = `¡Hola ${firstName}! Te escribimos de ${STORE.name}. Tu compra #${o.id} está confirmada. ${next}`
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+}
+
 function OrderCard({ order: o, onStatus }: { order: Order; onStatus: (s: Status) => void }) {
+  const confirm = o.status !== 'pendiente_pago' && o.status !== 'cancelado' ? confirmLink(o) : ''
   const date = new Date(o.created_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
   return (
     <article className="panel gap-3">
@@ -313,6 +329,12 @@ function OrderCard({ order: o, onStatus }: { order: Order; onStatus: (s: Status)
 
       {o.has_custom && <span className="hint">Incluye un producto a medida: coordinar la toma de molde.</span>}
       {o.payment_status && o.payment_status !== 'approved' && <span className="hint">Estado en Mercado Pago: {o.payment_status}</span>}
+
+      {confirm && (
+        <a className="btn-ghost self-start text-center text-sm" href={confirm} target="_blank" rel="noreferrer">
+          Confirmar la compra por WhatsApp
+        </a>
+      )}
 
       <label className="flex items-center gap-2 text-sm">
         <span className="font-semibold">Estado</span>
