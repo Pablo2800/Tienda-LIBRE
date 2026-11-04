@@ -19,6 +19,12 @@ export type Media =
   | { type: 'video'; src: string; poster?: string }
   | { type: 'youtube'; id: string; title?: string }
 
+/** Primera foto del producto (o la portada de su primer video), para tarjetas y banners. */
+export function coverOf(p: { media?: Media[] }): string | undefined {
+  const first = p.media?.find((m) => m.type !== 'youtube')
+  return first?.type === 'image' ? first.src : first?.type === 'video' ? first.poster : undefined
+}
+
 export interface Product {
   id: string
   category: string

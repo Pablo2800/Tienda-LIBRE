@@ -65,6 +65,8 @@
   --color-warn: var(--warn);
   --color-mercadopago: #009ee3;
   --shadow-modal: var(--shadow);
+  /* Títulos de la portada y menú: condensada en mayúsculas, con aire deportivo. */
+  --font-condensed: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --font-display: 'Familjen Grotesk', 'Helvetica Neue', Arial, sans-serif;
   --font-sans: 'Instrument Sans', 'Segoe UI', Roboto, Arial, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
@@ -129,6 +131,16 @@
   }
   .spinner {
     @apply mr-1.5 inline-block size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent align-[-2px];
+  }
+  /* Portada: títulos en mayúsculas y botón con borde que se rellena al pasar el mouse. */
+  .section-title {
+    @apply text-center font-condensed text-[clamp(24px,3vw,32px)] font-semibold tracking-[0.06em] uppercase;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-full border border-current px-5 py-2 font-condensed text-[15px] font-semibold tracking-[0.08em] uppercase transition-colors disabled:opacity-45;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
   }
   .summary-row {
     @apply flex justify-between gap-3 tabular-nums [&>:last-child]:whitespace-nowrap;
