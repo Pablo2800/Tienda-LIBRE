@@ -1,4 +1,5 @@
 import { whatsappLink } from '../data/store'
+import { WhatsAppIcon } from './WhatsAppIcon'
 
 // Franja de beneficios debajo del banner: ícono en un círculo y dos líneas de texto.
 const ICON = {
@@ -48,12 +49,7 @@ const ITEMS: { title: string; text: string; icon: React.ReactNode; href?: string
     title: 'Consultas',
     text: 'por WhatsApp',
     href: whatsappLink('Hola, tengo una consulta.'),
-    icon: (
-      <svg {...ICON}>
-        <path d="M4 20l1.3-3.9A8 8 0 1 1 8 18.8z" />
-        <path d="M9 10h6M9 13h4" />
-      </svg>
-    ),
+    icon: <WhatsAppIcon size={30} />,
   },
 ]
 

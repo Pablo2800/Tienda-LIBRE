@@ -1,4 +1,5 @@
 import { STORE, whatsappLink } from '../data/store'
+import { WhatsAppIcon } from './WhatsAppIcon'
 
 interface Props {
   categories: string[]
@@ -18,7 +19,8 @@ export function Footer({ categories, onCategory, onRevocation }: Props) {
           <img src="/logo-libre.png" alt={STORE.name} width="361" height="128" className="h-10 w-auto dark:invert" />
           <p className="font-condensed text-[16px] font-semibold tracking-[0.08em] uppercase">Productos pensados para tu recuperación</p>
           {chat && (
-            <a className="btn-outline hover:bg-ink hover:text-bg" href={chat} target="_blank" rel="noreferrer">
+            <a className="btn-outline gap-2 hover:bg-ink hover:text-bg" href={chat} target="_blank" rel="noreferrer">
+              <WhatsAppIcon />
               Escribinos por WhatsApp
             </a>
           )}
@@ -58,8 +60,9 @@ export function Footer({ categories, onCategory, onRevocation }: Props) {
             <li>Atención {STORE.hours}</li>
             {chat && (
               <li>
-                <a className={LINK} href={chat} target="_blank" rel="noreferrer">
-                  WhatsApp +{STORE.whatsapp}
+                <a className={`${LINK} inline-flex items-center gap-1.5`} href={chat} target="_blank" rel="noreferrer">
+                  <WhatsAppIcon size={16} />
+                  WhatsApp {STORE.whatsapp.replace(/^549(\d{3})(\d{3})(\d{4})$/, '+54 9 $1 $2-$3')}
                 </a>
               </li>
             )}

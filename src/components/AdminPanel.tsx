@@ -5,6 +5,7 @@ import { waPhone } from '../lib/phone'
 import { mapLink } from '../lib/shipping'
 import { AdminProducts } from './AdminProducts'
 import { BrandMark } from './BrandMark'
+import { WhatsAppIcon } from './WhatsAppIcon'
 
 // Panel del local en /admin: lista los pedidos guardados y permite cambiarles el estado.
 
@@ -331,7 +332,8 @@ function OrderCard({ order: o, onStatus }: { order: Order; onStatus: (s: Status)
       {o.payment_status && o.payment_status !== 'approved' && <span className="hint">Estado en Mercado Pago: {o.payment_status}</span>}
 
       {confirm && (
-        <a className="btn-ghost self-start text-center text-sm" href={confirm} target="_blank" rel="noreferrer">
+        <a className="btn-ghost inline-flex items-center gap-2 self-start text-sm" href={confirm} target="_blank" rel="noreferrer">
+          <WhatsAppIcon />
           Confirmar la compra por WhatsApp
         </a>
       )}

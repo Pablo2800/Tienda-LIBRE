@@ -1,4 +1,5 @@
 import { STORE, whatsappLink } from '../data/store'
+import { WhatsAppIcon } from './WhatsAppIcon'
 
 interface Props {
   orderId: string
@@ -33,7 +34,8 @@ export function OrderConfirmation({ orderId, customerName, delivery, hasCustom, 
         </div>
       )}
       {chat && (
-        <a className="btn-ghost text-center" href={chat} target="_blank" rel="noreferrer">
+        <a className="btn-ghost inline-flex items-center justify-center gap-2" href={chat} target="_blank" rel="noreferrer">
+          <WhatsAppIcon />
           Escribinos por WhatsApp
         </a>
       )}
