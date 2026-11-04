@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Benefits } from './components/Benefits'
 import { CartDrawer } from './components/CartDrawer'
+import { CategoryTiles } from './components/CategoryTiles'
 import { Checkout } from './components/Checkout'
+import { Footer } from './components/Footer'
 import { Header } from './components/Header'
+import { HeroCarousel } from './components/HeroCarousel'
 import { PaymentReturn } from './components/PaymentReturn'
 import { ProductCard } from './components/ProductCard'
 import { ProductModal } from './components/ProductModal'
@@ -9,15 +13,6 @@ import { Revocation } from './components/Revocation'
 import { CartProvider, useCart } from './context/CartContext'
 import { CatalogProvider, useCatalog } from './context/CatalogContext'
 import { cartKey } from './data/products'
-import { STORE, whatsappLink } from './data/store'
-
-// Beneficios que se muestran arriba a la derecha: [color del punto, título, texto].
-// Los puntos tienen color propio (verde, naranja, celeste) aunque la marca sea blanco y negro.
-const PERKS: [string, string, string][] = [
-  ['bg-[#1f9d7a] dark:bg-[#4cc2ae]', 'Envío en el día', 'en moto, o en auto si es voluminoso'],
-  ['bg-[#e8955a] dark:bg-[#f0a873]', 'A medida:', 'plantillas, férulas y ortesis hechas en nuestro taller'],
-  ['bg-mercadopago', 'Mercado Pago', 'con tarjeta, débito o dinero en cuenta'],
-]
 
 type View =
   | { kind: 'none' }
@@ -71,78 +66,57 @@ function Store() {
     return added
   }
   const close = () => setView({ kind: 'none' })
+  // La portada (banner, beneficios y categorías) se muestra solo sin búsqueda ni categoría elegida.
+  const home = category === 'Todos' && !query.trim()
+  const pickCategory = (c: string) => {
+    setCategory(c)
+    setQuery('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
   const openProduct = view.kind === 'product' ? catalog.find(view.id) : undefined
 
   return (
     <>
-      <Header query={query} onQuery={setQuery} cartCount={cart.count} onOpenCart={() => setView({ kind: 'cart' })} />
+      <Header
+        query={query}
+        onQuery={setQuery}
+        cartCount={cart.count}
+        onOpenCart={() => setView({ kind: 'cart' })}
+        categories={catalog.categories}
+        category={category}
+        onCategory={pickCategory}
+      />
 
-      <main className="wrap">
-        <section className="grid items-end gap-6 pt-7 pb-2 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <div>
-            <h1 className="font-display text-[clamp(28px,4.4vw,44px)] leading-[1.05] font-bold tracking-[-0.02em] text-balance">
-              Ortopedia y productos para tu recuperación, con envío en el día en Gran Mendoza
-            </h1>
-            <p className="mt-2.5 max-w-[56ch] text-muted">
-              Fajas, rodilleras, medias de compresión, andadores y sillas de ruedas. También fabricamos plantillas, férulas y ortesis a medida en
-              nuestro taller. Poné tu dirección y el costo de envío se calcula al instante.
-            </p>
-          </div>
-          <ul className="flex flex-col gap-2 text-sm">
-            {PERKS.map(([dot, title, text]) => (
-              <li key={title} className="flex items-center gap-2.5 rounded-[10px] border border-line bg-surface px-3 py-2.5">
-                <span className={`size-2.5 flex-none rounded-full ${dot}`} />
-                <span>
-                  <b className="font-semibold">{title}</b> {text}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
+      <main>
+        {home && (
+          <>
+            <HeroCarousel onCategory={pickCategory} />
+            <Benefits />
+            <CategoryTiles onCategory={pickCategory} />
+          </>
+        )}
 
-        <div className="flex flex-wrap items-center gap-2 pt-5 pb-3" role="group" aria-label="Categorías">
-          {catalog.categories.map((c) => (
-            <button key={c} className="chip" aria-pressed={c === category} onClick={() => setCategory(c)}>
-              {c}
-            </button>
-          ))}
-          <span className="ml-auto text-[13px] text-muted">
+        <section className="wrap pt-10 pb-14" aria-labelledby="productos">
+          <h2 id="productos" className="section-title">
+            {query.trim() ? `Resultados para “${query.trim()}”` : home ? 'Todos los productos' : category}
+          </h2>
+          <p className="mt-1 mb-7 text-center text-[13px] text-muted">
             {products.length} {products.length === 1 ? 'producto' : 'productos'}
-          </span>
-        </div>
-
-        <section className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4 pb-12" aria-live="polite">
-          {products.length === 0 && (
-            <div className="col-span-full rounded-xl border border-dashed border-line bg-surface p-10 text-center text-muted">
-              No encontramos productos para “{query}”. Probá con la zona del cuerpo o lo que necesitás, por ejemplo rodilla, lumbar o baño.
-            </div>
-          )}
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} onOpen={() => setView({ kind: 'product', id: p.id })} onAdd={() => add(p.id)} />
-          ))}
+          </p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] md:gap-x-6" aria-live="polite">
+            {products.length === 0 && (
+              <div className="col-span-full rounded-xl border border-dashed border-line bg-surface p-10 text-center text-muted">
+                No encontramos productos para “{query}”. Probá con la zona del cuerpo o lo que necesitás, por ejemplo rodilla, lumbar o baño.
+              </div>
+            )}
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} onOpen={() => setView({ kind: 'product', id: p.id })} onAdd={() => add(p.id)} />
+            ))}
+          </div>
         </section>
       </main>
 
-      <footer className="border-t border-line bg-surface text-[13px] text-muted">
-        <div className="wrap flex flex-wrap justify-between gap-3 py-5">
-          <span>
-            {STORE.name} · {STORE.address}
-            {STORE.whatsapp && (
-              <>
-                {' · '}
-                <a className="underline" href={whatsappLink('Hola, tengo una consulta.')} target="_blank" rel="noreferrer">
-                  WhatsApp
-                </a>
-              </>
-            )}
-          </span>
-          <span>Precios en pesos argentinos, IVA incluido</span>
-          {/* Obligatorio para tiendas online (Resolución 424/2020): visible y de fácil acceso. */}
-          <button className="basis-full text-left font-semibold text-ink underline" onClick={() => setView({ kind: 'arrepentimiento' })}>
-            Botón de arrepentimiento
-          </button>
-        </div>
-      </footer>
+      <Footer categories={catalog.categories} onCategory={pickCategory} onRevocation={() => setView({ kind: 'arrepentimiento' })} />
 
       {openProduct && (
         <ProductModal
