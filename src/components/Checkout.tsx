@@ -6,6 +6,7 @@ import { quoteDelivery, STORE_ADDRESS, ZONES, type Point, type Quote } from '../
 import { AddressInput } from './AddressInput'
 import { BrandMark } from './BrandMark'
 import { OrderConfirmation } from './OrderConfirmation'
+import { WhatsAppIcon } from './WhatsAppIcon'
 import { savePendingOrder } from '../lib/pendingOrder'
 
 // Leaflet pesa: el mapa se descarga recién cuando hay una dirección para mostrar.
@@ -147,7 +148,7 @@ export function Checkout({ onClose, onFinish }: { onClose: () => void; onFinish:
                   <div className="flex min-w-0 flex-col gap-[5px]">
                     <label className={LABEL} htmlFor="f-phone">Teléfono</label>
                     <input className={INPUT} id="f-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="261 555 0123" inputMode="tel" />
-                    <span className="hint">Te escribimos a este número por WhatsApp para coordinar la entrega.</span>
+                    <span className="hint inline-flex items-center gap-1.5"><WhatsAppIcon size={14} />Te escribimos a este número por WhatsApp para coordinar la entrega.</span>
                   </div>
                   <div className="flex min-w-0 flex-col gap-[5px] md:col-span-2">
                     <label className={LABEL} htmlFor="f-street">Calle y número</label>

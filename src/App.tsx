@@ -6,6 +6,8 @@ import { PaymentReturn } from './components/PaymentReturn'
 import { ProductCard } from './components/ProductCard'
 import { ProductModal } from './components/ProductModal'
 import { Revocation } from './components/Revocation'
+import { WhatsAppFloat } from './components/WhatsAppFloat'
+import { WhatsAppIcon } from './components/WhatsAppIcon'
 import { CartProvider, useCart } from './context/CartContext'
 import { CatalogProvider, useCatalog } from './context/CatalogContext'
 import { cartKey } from './data/products'
@@ -130,7 +132,8 @@ function Store() {
             {STORE.whatsapp && (
               <>
                 {' · '}
-                <a className="underline" href={whatsappLink('Hola, tengo una consulta.')} target="_blank" rel="noreferrer">
+                <a className="inline-flex items-center gap-1 underline" href={whatsappLink('Hola, tengo una consulta.')} target="_blank" rel="noreferrer">
+                  <WhatsAppIcon size={14} />
                   WhatsApp
                 </a>
               </>
@@ -166,6 +169,7 @@ function Store() {
         />
       )}
       {view.kind === 'return' && <PaymentReturn orderId={view.orderId} mpOrderId={view.mpOrderId} onApproved={cart.clear} onClose={close} />}
+      <WhatsAppFloat />
       {toast && (
         <div className="fixed bottom-[calc(20px+env(safe-area-inset-bottom))] left-1/2 z-[80] -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-bg">
           {toast}
