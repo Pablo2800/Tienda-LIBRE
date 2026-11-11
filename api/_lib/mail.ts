@@ -1,34 +1,54 @@
-// Avisos por mail al local, con Resend (resend.com, plan gratis de 3.000 mails por mes).
+// Avisos por mail: al local en cada venta y arrepentimiento, y a los proveedores con sus productos.
 //
-// Variables de entorno:
-//   RESEND_API_KEY → resend.com > API Keys.
-//   NOTIFY_EMAIL   → a qué mail llegan los avisos (el del local). Se pueden poner varios separados por coma.
-//   MAIL_FROM      → opcional. Sin dominio propio verificado en Resend se usa onboarding@resend.dev,
-//                    que solo puede mandar al mail con el que se creó la cuenta de Resend.
+// Se manda con Gmail (recomendado, sin dominio propio) o con Resend. Variables de entorno:
+//   NOTIFY_EMAIL       → a qué mail llegan los avisos del local. Se pueden poner varios separados por coma.
+//   Con Gmail:
+//     GMAIL_USER         → el Gmail desde el que salen los mails (ej. libresalud@gmail.com).
+//     GMAIL_APP_PASSWORD → contraseña de aplicación de esa cuenta (16 letras): myaccount.google.com/apppasswords,
+//                          con la verificación en dos pasos activada. No es la contraseña normal.
+//   Con Resend (si no hay Gmail):
+//     RESEND_API_KEY → resend.com > API Keys.
+//     MAIL_FROM      → opcional. Sin dominio propio verificado se usa onboarding@resend.dev,
+//                      que solo puede mandar al mail con el que se creó la cuenta de Resend.
 //
 // Si falta la configuración no se manda nada y la tienda sigue funcionando.
+import nodemailer, { type Transporter } from 'nodemailer'
 import { mapLink } from '../../src/lib/shipping.js'
 import { STORE } from '../../src/data/store.js'
 import type { OrderItem, Supplier } from './db.js'
 
-export const mailConfigured = () => Boolean(process.env.RESEND_API_KEY && process.env.NOTIFY_EMAIL)
+const gmailConfigured = () => Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD)
+export const mailConfigured = () => Boolean(process.env.NOTIFY_EMAIL && (gmailConfigured() || process.env.RESEND_API_KEY))
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 const ars = (n: number) => `$ ${Math.round(n).toLocaleString('es-AR')}`
 
 const notifyTo = () => process.env.NOTIFY_EMAIL!.split(',').map((s) => s.trim())
 
-// Sin destinatarios, el aviso va al local (NOTIFY_EMAIL).
+let gmail: Transporter | null = null
+
+// Sin destinatarios, el aviso va al local (NOTIFY_EMAIL). Si va a otro (un proveedor), la respuesta le llega al local.
 async function send(subject: string, html: string, to?: string[]) {
   if (!mailConfigured()) return
+  const recipients = to ?? notifyTo()
+  const replyTo = to ? notifyTo() : undefined
+
+  if (gmailConfigured()) {
+    gmail ??= nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD!.replace(/\s/g, '') },
+    })
+    await gmail.sendMail({ from: `${STORE.name} <${process.env.GMAIL_USER}>`, to: recipients, replyTo, subject, html })
+    return
+  }
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: process.env.MAIL_FROM || 'LIBRE Salud Deportiva <onboarding@resend.dev>',
-      to: to ?? notifyTo(),
-      // Si el proveedor responde, la respuesta le llega al local.
-      ...(to && { reply_to: notifyTo() }),
+      from: process.env.MAIL_FROM || `${STORE.name} <onboarding@resend.dev>`,
+      to: recipients,
+      ...(replyTo && { reply_to: replyTo }),
       subject,
       html,
     }),

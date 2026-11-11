@@ -132,16 +132,24 @@ confirmación del pedido y un link en el pie.
 ## Aviso de ventas por mail
 
 Cuando un pago queda aprobado, le llega un mail al local con el pedido: cliente, teléfono, entrega,
-productos y total. Usa [Resend](https://resend.com), que tiene un plan gratis de 3.000 mails por mes.
+productos y total. Si la venta incluye productos de otra tienda, a cada proveedor le llega un mail con lo suyo.
 
-1. Crear una cuenta en Resend con el mail del local y generar una API Key.
-2. En Vercel, cargar `RESEND_API_KEY` y `NOTIFY_EMAIL` (el mail de esa cuenta) y volver a desplegar.
-3. Con dominio propio: verificarlo en Resend y cargar `MAIL_FROM`, así se puede mandar a cualquier mail.
+**Con Gmail (recomendado, no hace falta dominio propio):** los mails salen desde un Gmail del local y pueden ir
+a cualquier destinatario (hasta unos 500 por día).
+
+1. En la cuenta de Gmail, activar la **verificación en dos pasos** (myaccount.google.com > Seguridad).
+2. Entrar a [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), crear una contraseña
+   de aplicación (nombre: "Tienda") y copiar las 16 letras. No es la contraseña normal del Gmail.
+3. En Vercel, cargar `GMAIL_USER` (el Gmail), `GMAIL_APP_PASSWORD` (las 16 letras) y `NOTIFY_EMAIL`
+   (a qué mail llegan los avisos del local; puede ser el mismo Gmail) y volver a desplegar.
+
+**Con Resend (alternativa):** si no hay Gmail configurado se usa [Resend](https://resend.com). Cargar `RESEND_API_KEY`
+y `NOTIFY_EMAIL`. Sin dominio propio verificado en Resend (y `MAIL_FROM`), solo puede mandar al mail de la cuenta,
+así que a los proveedores no les llega.
 
 **Productos de otra tienda (a comisión):** en `/admin` > Productos, cada producto tiene un campo de proveedor
 (nombre y mail). Cuando se paga una venta con ese producto, al proveedor le llega un mail con lo que se vendió
-de lo suyo, sin los datos del cliente; si responde, la respuesta le llega al local. Para que Resend pueda mandarle
-a un mail que no es el de la cuenta, hace falta el dominio verificado y `MAIL_FROM` (paso 3).
+de lo suyo, sin los datos del cliente; si responde, la respuesta le llega al local.
 
 Sin esas variables no se manda nada y la tienda funciona igual.
 
