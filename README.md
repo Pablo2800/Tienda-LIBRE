@@ -138,6 +138,11 @@ productos y total. Usa [Resend](https://resend.com), que tiene un plan gratis de
 2. En Vercel, cargar `RESEND_API_KEY` y `NOTIFY_EMAIL` (el mail de esa cuenta) y volver a desplegar.
 3. Con dominio propio: verificarlo en Resend y cargar `MAIL_FROM`, así se puede mandar a cualquier mail.
 
+**Productos de otra tienda (a comisión):** en `/admin` > Productos, cada producto tiene un campo de proveedor
+(nombre y mail). Cuando se paga una venta con ese producto, al proveedor le llega un mail con lo que se vendió
+de lo suyo, sin los datos del cliente; si responde, la respuesta le llega al local. Para que Resend pueda mandarle
+a un mail que no es el de la cuenta, hace falta el dominio verificado y `MAIL_FROM` (paso 3).
+
 Sin esas variables no se manda nada y la tienda funciona igual.
 
 ## Botón de arrepentimiento

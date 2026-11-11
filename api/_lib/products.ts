@@ -3,7 +3,14 @@
 import { SEED_PRODUCTS, type Media, type Product, type ProductKind } from '../../src/data/products.js'
 import { db, dbConfigured } from './db.js'
 
-export type AdminProduct = Product & { active: boolean }
+/**
+ * Producto como lo ve el panel. El proveedor (productos de otra tienda, que se venden a comisión)
+ * no se publica en la tienda: lo saca toPublic().
+ */
+export type AdminProduct = Product & { active: boolean; supplierName?: string; supplierEmail?: string }
+
+/** Lo que se muestra en la tienda: sin los datos del proveedor. */
+export const toPublic = ({ supplierName: _n, supplierEmail: _e, ...p }: AdminProduct): Product & { active: boolean } => p
 
 const KINDS: ProductKind[] = ['splint', 'stocking', 'toiletRiser', 'commode', 'afo', 'insole', 'walker', 'crutch', 'wheelchair', 'lumbar', 'knee', 'collar']
 
@@ -39,6 +46,8 @@ function fromRow(r: Record<string, unknown>): AdminProduct {
     stock: Number(r.stock),
     kind: (r.kind as ProductKind | null) ?? undefined,
     media: (r.media as Media[]).length ? (r.media as Media[]) : undefined,
+    supplierName: String(r.supplier_name ?? '') || undefined,
+    supplierEmail: String(r.supplier_email ?? '') || undefined,
   }
 }
 
@@ -53,11 +62,12 @@ export async function listProducts({ includeHidden = false } = {}): Promise<Admi
 /** Crea o actualiza un producto. Sin posición, uno nuevo va al final de la lista. */
 export async function save(p: AdminProduct, position?: number) {
   await db(
-    `INSERT INTO products (id, position, active, name, category, brand, indication, detail, sizes, made_to_measure, bulky, price, stock, kind, media)
-     VALUES ($1, COALESCE($2, (SELECT COALESCE(MAX(position), -1) + 1 FROM products)), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    `INSERT INTO products (id, position, active, name, category, brand, indication, detail, sizes, made_to_measure, bulky, price, stock, kind, media, supplier_name, supplier_email)
+     VALUES ($1, COALESCE($2, (SELECT COALESCE(MAX(position), -1) + 1 FROM products)), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
      ON CONFLICT (id) DO UPDATE SET
        active = $3, name = $4, category = $5, brand = $6, indication = $7, detail = $8, sizes = $9,
-       made_to_measure = $10, bulky = $11, price = $12, stock = $13, kind = $14, media = $15, updated_at = now()`,
+       made_to_measure = $10, bulky = $11, price = $12, stock = $13, kind = $14, media = $15,
+       supplier_name = $16, supplier_email = $17, updated_at = now()`,
     [
       p.id,
       position ?? null,
@@ -74,6 +84,8 @@ export async function save(p: AdminProduct, position?: number) {
       p.stock,
       p.kind ?? null,
       JSON.stringify(p.media ?? []),
+      p.supplierName ?? '',
+      p.supplierEmail ?? '',
     ],
   )
 }
@@ -104,6 +116,11 @@ export function parseProduct(input: unknown): AdminProduct | string {
   const id = typeof b.id === 'string' && /^[a-z0-9-]{1,80}$/.test(b.id) ? b.id : null
   if (!id) return 'Identificador inválido.'
 
+  const supplierEmail = text(b.supplierEmail, 120).toLowerCase()
+  if (supplierEmail && !/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(supplierEmail)) return 'El mail del proveedor no es válido.'
+  const supplierName = text(b.supplierName, 80)
+  if (supplierName && !supplierEmail) return 'Falta el mail del proveedor.'
+
   const sizes = Array.isArray(b.sizes) ? [...new Set(b.sizes.map((s) => text(s, 12)).filter(Boolean))].slice(0, 20) : []
 
   // Solo fotos subidas (https) o archivos propios de la tienda (/productos/...), y videos que ya estaban.
@@ -131,5 +148,7 @@ export function parseProduct(input: unknown): AdminProduct | string {
     stock,
     kind: KINDS.includes(b.kind as ProductKind) ? (b.kind as ProductKind) : undefined,
     media: media.length ? media : undefined,
+    supplierName: supplierEmail ? supplierName || undefined : undefined,
+    supplierEmail: supplierEmail || undefined,
   }
 }

@@ -25,7 +25,7 @@ type Order = {
   lat: number | null
   lng: number | null
   has_custom: boolean
-  items: { key: string; title: string; quantity: number; unit_price: number }[]
+  items: { key: string; title: string; quantity: number; unit_price: number; supplier?: { name: string; email: string } }[]
   shipping: number
   total: number
 }
@@ -318,6 +318,7 @@ function OrderCard({ order: o, onStatus }: { order: Order; onStatus: (s: Status)
           <div className="summary-row" key={i.key}>
             <span className="min-w-0">
               {i.quantity} × {i.title}
+              {i.supplier && <span className="text-muted"> · de {i.supplier.name || i.supplier.email}</span>}
             </span>
             <span>{ars(i.unit_price * i.quantity)}</span>
           </div>
