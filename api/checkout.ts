@@ -12,7 +12,7 @@ import { ZONES, type Point } from '../src/lib/shipping.js'
 import { createOrder, dbConfigured } from './_lib/db.js'
 import { parsePoint, quoteShipping } from './_lib/geo.js'
 import { createMpOrder, mpConfigured, type Item } from './_lib/mercadopago.js'
-import { listProducts } from './_lib/products.js'
+import { listProducts, type AdminProduct } from './_lib/products.js'
 import { json } from './_lib/http.js'
 
 type Body = {
@@ -41,6 +41,8 @@ export async function POST(request: Request): Promise<Response> {
     return json({ error: 'db' }, 502)
   }
   const items: Item[] = []
+  // Proveedor de cada ítem (productos de otra tienda), para avisarle cuando se pague.
+  const suppliers = new Map<string, { name: string; email: string }>()
   const units = new Map<string, number>() // unidades por producto, sumando todos los talles
   let bulky = false
   let hasCustom = false
@@ -50,6 +52,8 @@ export async function POST(request: Request): Promise<Response> {
     units.set(product.id, (units.get(product.id) ?? 0) + qty)
     if (units.get(product.id)! > available(product)) return json({ error: 'no_stock', key }, 400)
     if (product.sizes && !(size && product.sizes.includes(size))) return json({ error: 'invalid_size', key }, 400)
+    const { supplierName, supplierEmail } = product as AdminProduct
+    if (supplierEmail) suppliers.set(key, { name: supplierName ?? '', email: supplierEmail })
     bulky ||= Boolean(product.bulky)
     hasCustom ||= Boolean(product.madeToMeasure)
     items.push({
@@ -108,7 +112,7 @@ export async function POST(request: Request): Promise<Response> {
         vehicle,
         point,
         hasCustom,
-        items: items.map((i) => ({ key: i.id, title: i.title, quantity: i.quantity, unit_price: i.unit_price })),
+        items: items.map((i) => ({ key: i.id, title: i.title, quantity: i.quantity, unit_price: i.unit_price, ...(suppliers.get(i.id) && { supplier: suppliers.get(i.id) }) })),
         shipping,
         total: items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0),
       }).catch((err) => console.error('save order failed', err))

@@ -5,7 +5,7 @@ import { ProductArt } from './ProductArt'
 
 // Pestaña "Productos" del panel: el local carga, edita, ordena y oculta productos, con fotos y stock.
 
-type Item = Product & { active: boolean }
+type Item = Product & { active: boolean; supplierName?: string; supplierEmail?: string }
 
 // El formulario guarda los números como texto para poder dejarlos vacíos mientras se escribe.
 type Draft = {
@@ -24,6 +24,8 @@ type Draft = {
   active: boolean
   kind?: Product['kind']
   media: Media[]
+  supplierName: string
+  supplierEmail: string
 }
 
 const ACCESS_ERRORS = ['unauthorized', 'admin_not_configured', 'db_not_configured']
@@ -47,6 +49,8 @@ const toDraft = (p: Item): Draft => ({
   active: p.active,
   kind: p.kind,
   media: p.media ?? [],
+  supplierName: p.supplierName ?? '',
+  supplierEmail: p.supplierEmail ?? '',
 })
 
 const emptyDraft = (): Draft => ({
@@ -64,6 +68,8 @@ const emptyDraft = (): Draft => ({
   bulky: false,
   active: true,
   media: [],
+  supplierName: '',
+  supplierEmail: '',
 })
 
 // "Faja lumbar con ballenas" → "faja-lumbar-con-ballenas-3f9a", para que no choque con otro producto.
@@ -181,6 +187,7 @@ export function AdminProducts({ password, onError }: Props) {
                 <div className="text-[13px] text-muted">
                   {p.category} · {ars(p.price)} · {p.madeToMeasure ? 'A medida' : p.stock < 1 ? <b className="text-warn">Sin stock</b> : `Stock ${p.stock}`}
                   {!p.active && <b className="ml-1.5 rounded border border-line px-1.5 text-[11.5px]">Oculto</b>}
+                  {p.supplierEmail && <b className="ml-1.5 rounded border border-line px-1.5 text-[11.5px]">De {p.supplierName || 'proveedor'}</b>}
                 </div>
               </button>
               <div className="col-span-2 flex items-center justify-end gap-1 sm:col-span-1">
@@ -273,6 +280,8 @@ function Editor({ draft: initial, categories, call, onCancel, onSaved, onDeleted
       stock,
       kind: d.kind,
       media: d.media,
+      supplierName: d.supplierName,
+      supplierEmail: d.supplierEmail,
     }
     setBusy('Guardando…')
     const { ok, data } = await call('/api/admin-products', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(product) })
@@ -356,6 +365,28 @@ function Editor({ draft: initial, categories, call, onCancel, onSaved, onDeleted
         Características
         <textarea className={INPUT} rows={2} value={d.detail} onChange={(e) => set('detail', e.target.value)} maxLength={300} />
       </label>
+
+      <fieldset className="flex flex-col gap-2 rounded-lg border border-line p-3">
+        <legend className="px-1 text-[13px] font-semibold">Proveedor (solo si el producto es de otra tienda)</legend>
+        <span className="hint">Cuando se pague una venta con este producto, al proveedor le llega un mail con lo que se vendió de lo suyo. No se muestra en la tienda.</span>
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <label className={LABEL}>
+            Nombre del proveedor
+            <input className={INPUT} value={d.supplierName} onChange={(e) => set('supplierName', e.target.value)} maxLength={80} placeholder="Ej. Ortopedia Cuyo" />
+          </label>
+          <label className={LABEL}>
+            Mail del proveedor
+            <input
+              className={INPUT}
+              type="email"
+              value={d.supplierEmail}
+              onChange={(e) => set('supplierEmail', e.target.value)}
+              maxLength={120}
+              placeholder="ventas@proveedor.com"
+            />
+          </label>
+        </div>
+      </fieldset>
 
       <div className="flex flex-col gap-2">
         <label className={CHECK}>

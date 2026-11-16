@@ -66,6 +66,9 @@ export async function db(text: string, params: unknown[] = []) {
     )
     .then(() => q(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION, ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION`))
     .then(() => q(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS mp_order_id TEXT`))
+    .then(() =>
+      q(`ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_name TEXT NOT NULL DEFAULT '', ADD COLUMN IF NOT EXISTS supplier_email TEXT NOT NULL DEFAULT ''`),
+    )
     .then(() => q(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY)`))
     .then(() =>
       q(`
@@ -126,7 +129,10 @@ export const listRevocations = (limit = 100) => db(`SELECT * FROM revocations OR
 export const ORDER_STATUSES = ['pendiente_pago', 'pagado', 'preparado', 'enviado', 'entregado', 'cancelado'] as const
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
-export type OrderItem = { key: string; title: string; quantity: number; unit_price: number }
+/** Proveedor de un producto que vende otra tienda: recibe un mail con lo que se vendió de lo suyo. */
+export type Supplier = { name: string; email: string }
+
+export type OrderItem = { key: string; title: string; quantity: number; unit_price: number; supplier?: Supplier }
 
 export type NewOrder = {
   id: string
